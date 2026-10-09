@@ -1,0 +1,3 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const {status}=require('./status.cjs');
+test('tray shows paused, working, error and idle waiting states',()=>{const base={settings:{autoRefresh:true,rotation:false,ai:'off'},guard:{code:'active'},paused:false,job:null,lastError:null};assert.equal(status(null),'starting');assert.equal(status(base),'waiting');assert.equal(status({...base,guard:{code:'idle'}}),'ready');assert.equal(status({...base,job:{kind:'refresh'}}),'working');assert.equal(status({...base,lastError:{code:'networkError'}}),'error');assert.equal(status({...base,paused:true,job:{kind:'refresh'},lastError:{code:'timeout'}}),'paused');});

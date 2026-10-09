@@ -1,0 +1,11 @@
+import {createRequire} from 'node:module';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const own=createRequire(import.meta.url),builder=createRequire(own.resolve('electron-builder/package.json')),lib=createRequire(builder.resolve('app-builder-lib/package.json'));
+const asar=lib('@electron/asar'),list=asar.listPackage(process.argv[2]||'dist/win-unpacked/resources/app.asar').map(x=>x.replaceAll('\\','/'));
+assert.ok(!list.some(x=>x.startsWith('/data/')||x==='/data'));
+assert.ok(list.some(x=>x.endsWith('/desktop/main.cjs')));
+for(const file of ['automation.mjs','archive.mjs','monitor-native.cs','framing.mjs'])assert.ok(list.includes('/'+file),file+' must be packaged');
+assert.ok(!list.some(x=>x.endsWith('/credentials.json')||x.endsWith('/desktop-test-ready.json')));
+for(const file of ['server.mjs','core.mjs','library.mjs','windows.mjs','automation.mjs','archive.mjs','monitor-native.cs','desktop/main.cjs','public/app.js','public/i18n.js','public/index.html','public/style.css','framing.mjs','public/frame-editor.js'])assert.ok(asar.extractFile(process.argv[2]||'dist/win-unpacked/resources/app.asar',file).equals(fs.readFileSync(file)),'packaged source differs: '+file);
+console.log('PASS: desktop code is packaged; user library and API-key files are excluded.');

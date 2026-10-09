@@ -1,0 +1,27 @@
+export const defaultFrame={fit:'cover',x:.5,y:.5,flip:false};
+export function validateFrame(input={}){if(!input||typeof input!=='object'||Array.isArray(input))throw new AppError('invalidFrame');const f={...defaultFrame,...input};if(!['cover','contain'].includes(f.fit)||typeof f.flip!=='boolean'||!['x','y'].every(k=>typeof f[k]==='number'&&Number.isFinite(f[k])&&f[k]>=0&&f[k]<=1))throw new AppError('invalidFrame');return {fit:f.fit,x:f.x,y:f.y,flip:f.flip};}
+export const defaults={language:'ru',preset:'safe',tags:['nature','space'],excludedTags:[],period:'1M',width:1920,height:1080,fit:'contain',quality:88,maxItemMB:30,maxTotalGB:5,batch:12,autoRefresh:false,refreshMinutes:60,rotation:false,rotationMinutes:60,ai:'off',pauseProcesses:['obs64','blender'],retireAfter:3,pendingTarget:30,diversity:25,pauseOnBattery:true,changeOnStartup:false,changeOnWake:false,changeAfterFullscreen:false,schedule:[],monitors:{},shortcuts:{next:'',like:'',ban:'',work:''},frame:defaultFrame};
+export const folders={like:'liked',dislike:'disliked',ban:'blocked',pending:'pending'};
+export class AppError extends Error{constructor(code){super(code);this.code=code;}}
+export function contentMask(s){return s.purity??(s.preset==='adult'?'111':s.preset==='suggestive'?'110':'100');}
+export function errorCode(e,fallback='operationFailed'){if(e instanceof AppError)return e.code;if(['TimeoutError','AbortError'].includes(e.name))return 'timeout';if(e.code==='ENOSPC')return 'diskLimit';if(['ECONNRESET','ECONNREFUSED','ENOTFOUND','EAI_AGAIN','ETIMEDOUT'].includes(e.code))return 'networkError';return fallback;}
+export function validate(input){const s={...defaults,...input};
+ for(const [key,min,max] of [['width',320,16384],['height',240,16384],['quality',30,100],['maxItemMB',1,100],['maxTotalGB',0.1,1000],['batch',1,24],['refreshMinutes',5,10080],['rotationMinutes',1,10080]]){if(typeof s[key]!=='number'||!Number.isFinite(s[key])||s[key]<min||s[key]>max||(key!=='maxTotalGB'&&!Number.isInteger(s[key])))throw new AppError('invalidSettings');}
+ for(const [k,values] of Object.entries({language:['ru','en'],preset:['safe','suggestive','adult'],period:['1d','3d','1w','1M','3M','6M','1y'],fit:['contain','cover','inside'],ai:['off','eco','auto']}))if(!values.includes(s[k]))throw new AppError('invalidSettings');
+ for(const k of ['tags','excludedTags','pauseProcesses'])if(!Array.isArray(s[k])||s[k].length>40||s[k].some(t=>typeof t!=='string'||t.length>80))throw new AppError('invalidSettings');
+ for(const k of ['autoRefresh','rotation','pauseOnBattery','changeOnStartup','changeOnWake','changeAfterFullscreen'])if(typeof s[k]!=='boolean')throw new AppError('invalidSettings');
+ for(const [k,min,max]of [['retireAfter',2,10],['pendingTarget',0,500],['diversity',0,100]])if(!Number.isInteger(s[k])||s[k]<min||s[k]>max)throw new AppError('invalidSettings');
+ if(!Array.isArray(s.schedule)||s.schedule.length>24||s.schedule.some(x=>typeof x!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(x)))throw new AppError('invalidSettings');
+ if(!s.monitors||typeof s.monitors!=='object'||Array.isArray(s.monitors)||Object.keys(s.monitors).length>32)throw new AppError('invalidSettings');
+ const monitors={};for(const [id,m]of Object.entries(s.monitors)){if(id.length>1024||!m||typeof m.rotation!=='boolean'||!Number.isInteger(m.rotationMinutes)||m.rotationMinutes<1||m.rotationMinutes>10080||!/^[01]{3}$/.test(m.purity)||m.purity==='000'||!Array.isArray(m.tags)||m.tags.length>40||m.tags.some(x=>typeof x!=='string'||x.length>80))throw new AppError('invalidSettings');monitors[id]={rotation:m.rotation,rotationMinutes:m.rotationMinutes,purity:m.purity,tags:m.tags,...m.frame!==undefined&&{frame:validateFrame(m.frame)}};}
+ if(!s.shortcuts||typeof s.shortcuts!=='object'||Array.isArray(s.shortcuts))throw new AppError('invalidSettings');const shortcuts={};for(const k of ['next','like','ban','work']){const value=s.shortcuts[k]??'';if(typeof value!=='string'||value.length>80||/[\r\n]/.test(value))throw new AppError('invalidSettings');shortcuts[k]=value;}
+ const purity=contentMask(s);if((s.purity!==undefined&&typeof s.purity!=='string')||!/^[01]{3}$/.test(purity)||purity==='000')throw new AppError('invalidSettings');
+ return {...Object.fromEntries(Object.keys(defaults).map(k=>[k,s[k]])),frame:validateFrame(s.frame),monitors,shortcuts,schedule:[...new Set(s.schedule)],purity,preset:purity[2]==='1'?'adult':purity[1]==='1'?'suggestive':'safe'};
+}
+export function allowed(item,s){const index=['safe','suggestive','adult'].indexOf(item.rating);return index>=0&&contentMask(s)[index]==='1'&&!s.excludedTags.some(t=>item.tags.some(v=>v.toLowerCase()===t.toLowerCase()));}
+export function cosine(a,b){if(!a||!b||a.length!==b.length)return 0;let d=0,aa=0,bb=0;for(let i=0;i<a.length;i++){d+=a[i]*b[i];aa+=a[i]*a[i];bb+=b[i]*b[i];}return d/Math.sqrt(aa*bb)||0;}
+export function score(x,items,s){let n=x.tags.filter(t=>s.tags.some(v=>v.toLowerCase()===t.toLowerCase())).length*2;
+ for(const y of items){const vote=y.vote==='like'?1:y.vote==='dislike'?-1:0;if(!vote)continue;n+=vote*x.tags.filter(t=>y.tags.includes(t)).length;n+=vote*(x.embedding&&y.embedding?cosine(x.embedding,y.embedding)*2:cosine(x.colors,y.colors));}return n;
+}
+export async function sharpModule(){return (await import('sharp')).default;}
+export function safeId(provider,id){return `${provider}-${String(id).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80)}`;}

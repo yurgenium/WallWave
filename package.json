@@ -1,0 +1,76 @@
+{
+  "name": "wallbloom",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Local wallpaper recommendations for Windows",
+  "author": "WallWave contributors",
+  "license": "MIT",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "start:web": "node server.mjs",
+    "test": "node --test core.test.mjs automation.test.mjs framing.test.mjs integration.test.mjs plan-integration.test.mjs desktop/status.test.cjs desktop/storage.test.cjs",
+    "check": "node --check server.mjs && node --check desktop/main.cjs && node --check public/app.js",
+    "icons": "node tools/create-icons.mjs",
+    "build:win": "node tools/create-icons.mjs && electron-builder --win portable --x64",
+    "build:dir": "node tools/create-icons.mjs && electron-builder --win dir --x64"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "sharp": "0.34.5",
+    "@huggingface/transformers": "3.8.1"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "app.wallbloom.desktop",
+    "productName": "WallWave",
+    "npmRebuild": false,
+    "electronDist": "node_modules/electron/dist",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "desktop/**",
+      "public/**",
+      "server.mjs",
+      "core.mjs",
+      "library.mjs",
+      "network.mjs",
+      "providers.mjs",
+      "windows.mjs",
+      "ai-worker.mjs",
+      "LICENSE",
+      "package.json",
+      "automation.mjs",
+      "archive.mjs",
+      "monitor-native.cs",
+      "framing.mjs"
+    ],
+    "asarUnpack": [
+      "**/*.node",
+      "**/*.dll",
+      "**/onnxruntime-node/bin/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "desktop/icons/app.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "WallWave-Windows-x64.exe"
+    }
+  }
+}

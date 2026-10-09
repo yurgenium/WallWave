@@ -1,0 +1,10 @@
+packages:
+  - '.'
+allowBuilds:
+  sharp: false
+  electron: true
+  onnxruntime-node: false
+  protobufjs: false
+  electron-winstaller: false
+minimumReleaseAgeExclude:
+  - electron@44.7.0

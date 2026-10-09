@@ -1,0 +1,9 @@
+node_modules/
+data/
+*.log
+.env*
+.pnpm-store/
+dist/
+Wallbloom.lnk
+
+WallWave.lnk
