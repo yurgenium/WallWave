@@ -1,5 +1,9 @@
 @echo off
 cd /d "%~dp0"
+if exist "..\WallWave.exe" (
+ start "WallWave" "..\WallWave.exe"
+ exit /b
+)
 if exist "dist\WallWave-Windows-x64.exe" (
  start "WallWave" "dist\WallWave-Windows-x64.exe"
  exit /b

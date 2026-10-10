@@ -24,7 +24,7 @@ export function hamming(a,b){if(!/^[0-9a-f]{16}$/.test(a||'')||!/^[0-9a-f]{16}$/
 export function duplicateOf(candidate,items){return items.find(x=>x.id!==candidate.id&&x.downloaded&&((candidate.hash&&x.hash===candidate.hash)||(candidate.pixelHash&&x.pixelHash===candidate.pixelHash)||(hamming(x.visualHash,candidate.visualHash)<=5&&Math.abs((x.visualAspect||1)-(candidate.visualAspect||1))<.12&&sampleDistance(x.visualSample,candidate.visualSample)<9)));}
 function sampleDistance(a,b){if(!a||!b||a.length!==b.length)return Infinity;const aa=Buffer.from(a,'hex'),bb=Buffer.from(b,'hex');return aa.reduce((n,v,i)=>n+Math.abs(v-bb[i]),0)/aa.length;}
 export function confirmShows(db,guard,now=Date.now()){
- if(guard.code!=='active'||guard.locked||guard.fullscreen){for(const exposure of Object.values(db.exposures||{}))if(!exposure.counted)exposure.since=now;return false;}
+ if(!['active','idle'].includes(guard.code)||guard.idle>=120000||guard.locked||guard.fullscreen){for(const exposure of Object.values(db.exposures||{}))if(!exposure.counted)exposure.since=now;return false;}
  let changed=false;const counted=new Set();for(const exposure of Object.values(db.exposures||{})){if(exposure.counted||now-exposure.since<30000)continue;const x=db.items.find(x=>x.id===exposure.id);if(x){if(!counted.has(x.id)){x.showCount=(x.showCount||0)+1;x.lastShown=now;counted.add(x.id);}exposure.counted=true;changed=true;}}return changed;
 }
 export function automationState(db,guard,{job,nextRetry,lastError,aiRequested},now=Date.now()){

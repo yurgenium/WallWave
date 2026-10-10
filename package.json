@@ -1,6 +1,6 @@
 {
   "name": "wallbloom",
-  "version": "0.4.0",
+  "version": "0.4.6",
   "private": true,
   "type": "module",
   "description": "Local wallpaper recommendations for Windows",
@@ -10,17 +10,17 @@
   "scripts": {
     "start": "electron .",
     "start:web": "node server.mjs",
-    "test": "node --test core.test.mjs automation.test.mjs framing.test.mjs integration.test.mjs plan-integration.test.mjs desktop/status.test.cjs desktop/storage.test.cjs",
+    "test": "node --test core.test.mjs automation.test.mjs framing.test.mjs integration.test.mjs plan-integration.test.mjs desktop/status.test.cjs desktop/storage.test.cjs resources.test.mjs download-controls.test.mjs network-retry.test.mjs sprintf-security.test.cjs orientation.test.mjs wallpaper-titles.test.mjs",
     "check": "node --check server.mjs && node --check desktop/main.cjs && node --check public/app.js",
     "icons": "node tools/create-icons.mjs",
-    "build:win": "node tools/create-icons.mjs && electron-builder --win portable --x64",
+    "build:win": "node tools/create-icons.mjs && electron-builder --win nsis --x64",
     "build:dir": "node tools/create-icons.mjs && electron-builder --win dir --x64"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "sharp": "0.34.5",
+    "sharp": "0.35.5",
     "@huggingface/transformers": "3.8.1"
   },
   "devDependencies": {
@@ -50,7 +50,9 @@
       "automation.mjs",
       "archive.mjs",
       "monitor-native.cs",
-      "framing.mjs"
+      "framing.mjs",
+      "resources.mjs",
+      "orientation.mjs"
     ],
     "asarUnpack": [
       "**/*.node",
@@ -60,7 +62,7 @@
     "win": {
       "target": [
         {
-          "target": "portable",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
@@ -69,7 +71,10 @@
       "icon": "desktop/icons/app.ico",
       "signAndEditExecutable": false
     },
-    "portable": {
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "script": "desktop/deploy.nsi",
       "artifactName": "WallWave-Windows-x64.exe"
     }
   }

@@ -4,26 +4,30 @@
 
 ## Запуск из исходников
 
-Установите **Node.js 22.12 или новее**, затем откройте терминал в папке проекта и выполните:
+Для воспроизводимой установки используйте **Node.js 24** и **pnpm 11.25.0**. Откройте терминал в папке исходников `wallbloom/` и выполните:
 
 ```sh
-npm install
-npm start
+pnpm install --frozen-lockfile
+pnpm start
 ```
 
-`npm start` открывает приложение Electron. Для браузерного режима выполните `npm run start:web` и откройте <http://127.0.0.1:43198>.
+`pnpm start` открывает приложение Electron. Для браузерного режима выполните `pnpm run start:web` и откройте <http://127.0.0.1:43198>.
 
-В проекте есть `pnpm-lock.yaml`. Для установки зафиксированных зависимостей используйте `pnpm install --frozen-lockfile`; для запуска — `pnpm start`.
+Lockfile и локальные патчи зависимостей включены в проект. Используйте pnpm, чтобы применялись зафиксированные версии и исправления.
 
 ## Проверки и сборка
 
 ```sh
-npm run check
-npm test
-npm run build:win
+pnpm run check
+pnpm test
+pnpm run build:win
 ```
 
 Готовая сборка: **`dist/WallWave-Windows-x64.exe`**. Распакованная: `dist/win-unpacked/WallWave.exe`; сохраните остальные файлы этой папки рядом.
+
+Корневая папка рабочего пространства содержит готовый `WallWave.exe`, установленное приложение в `WallWave/` и архив в `archive/`. Репозиторий Git находится только в `wallbloom/`.
+
+Перед коммитом включите [проверки личных данных](PRIVACY.md): `git config --local core.hooksPath .githooks`.
 
 Тесты работают во временной библиотеке и не меняют обои рабочего стола. Дополнительные браузерные сценарии: `tools/check-ui.mjs`, `tools/check-redesign.mjs`; передайте путь к папке Node-пакетов с Playwright. Для них нужен установленный Edge.
 

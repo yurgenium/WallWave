@@ -1,0 +1,4 @@
+import fs from 'node:fs/promises';
+import {setTimeout} from 'node:timers/promises';
+export async function fetchJSON(){return {items:JSON.parse(await fs.readFile(process.env.WALLBLOOM_NATIVE_FIXTURE,'utf8')).items||['new','failed'].map(id=>({id,url:'https://example.com/'+id,rating:'safe',tags:['nature'],title:id}))};}
+export async function fetchBytes(url,{signal,onProgress,prefix}={}){await setTimeout(800,null,{signal});const fixture=process.env.WALLBLOOM_NATIVE_FIXTURE;await fs.appendFile(fixture+'.requests',JSON.stringify({url,prefix:prefix||0})+'\n');if(url.endsWith('/failed')&&!(JSON.parse(await fs.readFile(fixture,'utf8'))).allowFailed)throw Object.assign(Error('temporary download failure'),{code:'ECONNRESET'});const bytes=await fs.readFile(fixture+'.'+new URL(url).pathname.slice(1)+'.png');onProgress?.(bytes.length,bytes.length);return prefix?bytes.subarray(0,prefix):bytes;}

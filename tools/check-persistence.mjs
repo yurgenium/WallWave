@@ -12,8 +12,8 @@ const env={...process.env,WALLBLOOM_DESKTOP_TEST:'1',WALLBLOOM_DESKTOP_TEST_HOME
 delete env.WALLBLOOM_DATA_DIR;delete env.WALLBLOOM_IMPORT_DATA_DIR;
 await fs.mkdir(data);await fs.writeFile(path.join(data,'state.json'),JSON.stringify({settings:defaults,providers:[{id:'wallhaven',name:'Wallhaven',type:'wallhaven',enabled:false}],items:[{id:'saved',title:'Saved wallpaper',rating:'safe',tags:['nature'],vote:'like',downloaded:false}],pages:{},current:null,lastRefresh:0,lastRotation:0}));
 let app,proc;
-async function launch(){app=await _electron.launch({executablePath:exe,env,timeout:30000});proc=app.process();const page=await app.firstWindow();await page.getByRole('heading',{name:'Библиотека',exact:true}).waitFor();const ready=JSON.parse(await fs.readFile(path.join(data,'desktop-test-ready.json'),'utf8'));return {url:ready.base,s:await(await fetch(ready.base+'/api/state')).json()};}
-async function quit(){const closed=app.waitForEvent('close',{timeout:15000});await app.evaluate(()=>globalThis.__wallbloomTest.beginQuit());await closed;app=null;}
+async function launch(){app=await _electron.launch({executablePath:exe,env,timeout:30000});proc=app.process();const page=await app.firstWindow();await page.locator('button[data-view="library"]').waitFor();const ready=JSON.parse(await fs.readFile(path.join(data,'desktop-test-ready.json'),'utf8'));return {url:ready.base,s:await(await fetch(ready.base+'/api/state')).json()};}
+async function quit(){const closed=app.waitForEvent('close',{timeout:15000});await app.evaluate(()=>{void globalThis.__wallbloomTest.beginQuit();});await closed;app=null;}
 try{
  let {url,s}=await launch();assert.equal(s.items.length,1);assert.equal(s.library,data);
  const post=async(route,body)=>{const r=await fetch(url+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token},body:JSON.stringify(body)});assert.equal(r.status,200);};

@@ -1,33 +1,57 @@
-# WallWave
+# WallWave — подборщик обоев для Windows
 
 [Русский](#русский) · [English](#english)
 
 ## Русский
 
-**Обои под ваши предпочтения.** WallWave подбирает изображения для рабочего стола Windows. Отмечайте понравившиеся — ваши оценки помогают улучшать подбор.
+**Обои, которые подходят именно вам.** WallWave помогает находить изображения для рабочего стола, учитывать ваши интересы и автоматически менять фон. Отмечайте понравившиеся обои — ваши оценки улучшают последующий подбор.
 
-### Начало работы
+### Основные возможности
 
-1. Запустите **`WallWave-Windows-x64.exe`**.
-2. Укажите ваши интересы в **настройках**.
-3. Выберите обои и нажмите **«Установить»**.
+- **Подбор по интересам** — изображения из Wallhaven и ваших локальных папок.
+- **Обучение на оценках** — понравившиеся обои влияют на рекомендации; нежелательные можно исключить.
+- **Автоматическая смена** — настройте интервал или расписание. Фоновые задачи учитывают нагрузку компьютера.
+- **Кадр под ваш экран** — обрезка, вписывание и отдельные настройки мониторов.
+- **Локальная библиотека** — скачанные изображения, оценки и настройки сохраняются на компьютере.
+- **Необязательный AI-анализ** — локальная модель помогает учитывать визуальное сходство изображений.
 
-**Готовая сборка не требует Node.js.** Настройки и оценки сохраняются на вашем компьютере.
+### Как начать
 
-**Закрытие окна оставляет приложение в трее.** Чтобы завершить работу, выберите **«Выход»** в меню значка рядом с часами.
+Для готового приложения нужен **Windows x64**. **Node.js устанавливать не требуется.**
 
-Проект находится **в разработке**. [История изменений](CHANGELOG.md) · [Техническая документация](docs/DEVELOPMENT.md) · [Лицензия MIT](LICENSE)
+1. Запустите **`WallWave.exe`** из готовой сборки. Название скачанного файла также может быть `WallWave-Windows-x64.exe`.
+2. При первом запуске **выберите место размещения**. Программа создаст там папку **WallWave**. Следующие запуски используют сохранённое место; повторная распаковка не нужна.
+3. Откройте **настройки**, укажите ваши интересы и параметры экрана. В разделе источников можно добавить собственную папку с изображениями.
+4. Запустите подбор, дождитесь загрузки и выберите изображение. Нажмите **«Установить»**, чтобы применить обои.
+5. Отмечайте понравившиеся изображения. При желании включите **автоматический поиск и смену** в настройках.
+
+**Закрытие окна оставляет приложение в трее.** Чтобы полностью завершить работу, выберите пункт выхода в меню значка рядом с часами.
+
+### Обновление и ваши данные
+
+**Обои, предпочтения, оценки и ключи хранятся отдельно от программы**, в `%USERPROFILE%\Wallbloom\library`. Название папки сохранено для совместимости. Замена EXE не удаляет эту библиотеку.
+
+Перед обновлением завершите приложение через трей, затем запустите новую сборку. Ссылку на страницу выпусков можно открыть через **Настройки → Обновления → GitHub**. Обновления устанавливаются вручную.
+
+**Личные данные и обои не входят в репозиторий.** Их исключение проверяется перед коммитом и отправкой. Подробности: [защита личных данных](docs/PRIVACY.md).
+
+**Проект находится в разработке.** [История изменений](CHANGELOG.md) · [Для разработчиков](docs/DEVELOPMENT.md) · [Лицензия MIT](LICENSE)
 
 ## English
 
-**Wallpapers that match your taste.** WallWave recommends wallpapers for your Windows desktop. Rate the images you like to improve recommendations.
+**WallWave is a Windows wallpaper recommender and automatic wallpaper changer.** Discover desktop backgrounds from Wallhaven or your local folders, rate your favorites and improve future recommendations.
 
-1. Run **`WallWave-Windows-x64.exe`**.
-2. Choose your interests in **Settings**.
-3. Select a wallpaper and click **Set wallpaper**.
+**Main features:** interest-based recommendations, automatic rotation and scheduling, per-monitor framing, a local library and optional on-device AI image analysis.
 
-**The compiled app does not require Node.js.** Settings and ratings are stored on your computer.
+### Getting started
 
-**Closing the window keeps the app in the system tray.** Select **Quit** from the tray menu to exit completely.
+1. Run **`WallWave.exe`** from a compiled Windows x64 build. Some downloads use the name `WallWave-Windows-x64.exe`. **Node.js is not required.**
+2. Choose an installation location on the first launch. A separate **WallWave** folder is created and reused later.
+3. Set your interests, screen preferences and image sources in **Settings**.
+4. Find and download wallpapers, select an image and click **Set wallpaper**. Rate images and optionally enable automatic search and rotation.
 
-**In development.** [Changelog (RU)](CHANGELOG.md) · [Technical documentation (RU)](docs/DEVELOPMENT.md) · [MIT license](LICENSE)
+**Closing the window keeps the app in the tray.** Use the tray menu to quit completely before replacing the EXE with a newer build.
+
+**Personal wallpapers, ratings, preferences and keys stay outside the app**, in `%USERPROFILE%\Wallbloom\library`, and are excluded from this repository. Local Git checks help prevent accidental uploads.
+
+**In development.** [Changelog (RU)](CHANGELOG.md) · [Privacy safeguards (RU)](docs/PRIVACY.md) · [Developer documentation (RU)](docs/DEVELOPMENT.md) · [MIT license](LICENSE)
