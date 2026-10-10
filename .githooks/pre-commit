@@ -1,2 +1,2 @@
 #!/bin/sh
-node tools/check-repository.mjs
+node wallbloom/tools/check-repository.mjs

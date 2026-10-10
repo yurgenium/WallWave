@@ -33,9 +33,9 @@
 
 Перед обновлением завершите приложение через трей, затем запустите новую сборку. Ссылку на страницу выпусков можно открыть через **Настройки → Обновления → GitHub**. Обновления устанавливаются вручную.
 
-**Личные данные и обои не входят в репозиторий.** Их исключение проверяется перед коммитом и отправкой. Подробности: [защита личных данных](docs/PRIVACY.md).
+**Личные данные и обои не входят в репозиторий.** Их исключение проверяется перед коммитом и отправкой. Подробности: [защита личных данных](wallbloom/docs/PRIVACY.md).
 
-**Проект находится в разработке.** [История изменений](CHANGELOG.md) · [Для разработчиков](docs/DEVELOPMENT.md) · [Лицензия MIT](LICENSE)
+**Проект находится в разработке.** [История изменений](CHANGELOG.md) · [Для разработчиков](wallbloom/docs/DEVELOPMENT.md) · [Лицензия MIT](LICENSE)
 
 ## English
 
@@ -54,4 +54,13 @@
 
 **Personal wallpapers, ratings, preferences and keys stay outside the app**, in `%USERPROFILE%\Wallbloom\library`, and are excluded from this repository. Local Git checks help prevent accidental uploads.
 
-**In development.** [Changelog (RU)](CHANGELOG.md) · [Privacy safeguards (RU)](docs/PRIVACY.md) · [Developer documentation (RU)](docs/DEVELOPMENT.md) · [MIT license](LICENSE)
+**In development.** [Changelog (RU)](CHANGELOG.md) · [Privacy safeguards (RU)](wallbloom/docs/PRIVACY.md) · [Developer documentation (RU)](wallbloom/docs/DEVELOPMENT.md) · [MIT license](LICENSE)
+
+## Структура репозитория
+
+- **README.md** — описание и инструкция запуска.
+- **CHANGELOG.md** — история изменений.
+- **LICENSE** — лицензия.
+- **wallbloom/** — исходники приложения, тесты, инструменты и техническая документация.
+
+Готовое приложение, установленная папка **WallWave/** и локальный **archive/** в Git не включаются.

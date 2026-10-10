@@ -5,6 +5,9 @@ permissions:
 jobs:
   test:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: wallbloom
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

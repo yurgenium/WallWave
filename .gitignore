@@ -58,8 +58,13 @@ layout-rollback.json
 *.bin
 
 # Only the application's known icons may be published as images.
-!desktop/icons/error.png
-!desktop/icons/paused.png
-!desktop/icons/waiting.png
-!desktop/icons/working.png
-!desktop/icons/app.ico
+!wallbloom/desktop/icons/error.png
+!wallbloom/desktop/icons/paused.png
+!wallbloom/desktop/icons/waiting.png
+!wallbloom/desktop/icons/working.png
+!wallbloom/desktop/icons/app.ico
+
+# Installed applications and archives are local only.
+/WallWave/
+/WallWave.exe
+/archive/

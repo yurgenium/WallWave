@@ -2,21 +2,21 @@
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const git=(...args)=>execFileSync('git',['-c',`safe.directory=${root.replaceAll('\\','/')}`,...args],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']});
 const icons=new Set(['desktop/icons/app.ico','desktop/icons/error.png','desktop/icons/paused.png','desktop/icons/waiting.png','desktop/icons/working.png']);
 export function privatePath(file){
- const name=file.replaceAll('\\','/').toLowerCase();
+ const name=file.replaceAll('\\','/').toLowerCase().replace(/^wallbloom\//,'');
  if(icons.has(name))return false;
- return /(^|\/)(data|library|pending|liked|disliked|blocked|thumbnails|originals|rendered|models|node_modules|\.pnpm-store|dist|work|archive)(\/|$)/.test(name)
+ return /(^|\/)(wallwave|data|library|pending|liked|disliked|blocked|thumbnails|originals|rendered|models|node_modules|\.pnpm-store|dist|work|archive)(\/|$)/.test(name)
   || /(^|\/)(library\.before-restore-|wallwave-export-)/.test(name)
   || /(^|\/)(state|credentials|settings|preferences)\.json($|\.)/.test(name)
   || /(^|\/)(installation\.ini|layout-rollback\.json|desktop-before-[^/]+\.json|\.env[^/]*)$/.test(name)
   || /\.(jpg|jpeg|png|webp|avif|gif|bmp|tiff?|heic|ico|mp4|webm|mov|exe|dll|zip|7z|rar|onnx|safetensors|bin|source|backup|log|lnk)$/i.test(name);
 }
 if(process.argv.includes('--self-test')){
- const blocked=['state.json','data/notes.txt','prefs/preferences.json.backup','library/photo.jpg','installation.ini','export/photo.png','models/model.onnx','photo.SOURCE','archive/code.mjs','docs/screen.png'];
- const allowed=['README.md','package.json','archive.mjs','desktop/storage.cjs','desktop/icons/app.ico','desktop/icons/working.png'];
+ const blocked=['state.json','data/notes.txt','prefs/preferences.json.backup','library/photo.jpg','installation.ini','export/photo.png','models/model.onnx','photo.SOURCE','archive/code.mjs','docs/screen.png','WallWave/app/installation.ini','wallbloom/data/state.json','wallbloom/work/history.bundle'];
+ const allowed=['README.md','package.json','archive.mjs','desktop/storage.cjs','desktop/icons/app.ico','desktop/icons/working.png','wallbloom/desktop/icons/app.ico','wallbloom/desktop/icons/working.png'];
  if(blocked.some(x=>!privatePath(x))||allowed.some(privatePath))throw Error('Repository privacy check self-test failed');
  console.log('Privacy rules self-test: OK');
 }else{

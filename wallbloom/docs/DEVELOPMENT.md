@@ -25,7 +25,7 @@ pnpm run build:win
 
 Готовая сборка: **`dist/WallWave-Windows-x64.exe`**. Распакованная: `dist/win-unpacked/WallWave.exe`; сохраните остальные файлы этой папки рядом.
 
-Корневая папка рабочего пространства содержит готовый `WallWave.exe`, установленное приложение в `WallWave/` и архив в `archive/`. Репозиторий Git находится только в `wallbloom/`.
+Репозиторий Git начинается в корне проекта. Исходники, зависимости и инструменты разработки находятся в `wallbloom/`. Локальные `WallWave.exe`, установленное приложение в `WallWave/` и архив в `archive/` исключены из Git.
 
 Перед коммитом включите [проверки личных данных](PRIVACY.md): `git config --local core.hooksPath .githooks`.
 
