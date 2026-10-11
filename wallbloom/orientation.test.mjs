@@ -1,5 +1,18 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {fork} from 'node:child_process';
 import {defaults,sharpModule} from './core.mjs';import {hasPortraitScreen,portraitImage,sourceDimensions} from './orientation.mjs';
+import {visualFingerprint} from './library.mjs';
+import {duplicateOf} from './automation.mjs';
+
+test('duplicate fingerprints use displayed dimensions after EXIF rotation',async()=>{
+ const sharp=await sharpModule(),pixels=Buffer.alloc(240*160*3);
+ for(let y=0;y<160;y++)for(let x=0;x<240;x++){const i=(y*240+x)*3;pixels[i]=x;pixels[i+1]=y;pixels[i+2]=x%60<30?40:200;}
+ const original=await sharp(pixels,{raw:{width:240,height:160,channels:3}}).withMetadata({orientation:6}).jpeg({quality:95}).toBuffer();
+ const rotated=await sharp(original).rotate().resize(80,120).jpeg({quality:75}).toBuffer();
+ const a={id:'original',downloaded:true,...await visualFingerprint(original)},b={id:'rotated',...await visualFingerprint(rotated)};
+ assert.equal(a.visualAspect,160/240);assert.equal(b.visualAspect,a.visualAspect);
+ assert.notEqual(a.hash,b.hash);assert.notEqual(a.pixelHash,b.pixelHash);
+ assert.equal(duplicateOf(b,[a]),a);
+});
 test('physical monitor orientation and EXIF determine whether portrait downloads are needed',()=>{assert.equal(hasPortraitScreen([{width:1920,height:1080}],{width:1080,height:1920}),false);assert.equal(hasPortraitScreen([{width:1920,height:1080},{width:1080,height:1920}]),true);assert.equal(portraitImage({width:1920,height:1080,sourceWidth:800,sourceHeight:1200}),true);assert.deepEqual(sourceDimensions({width:1920,height:1080,orientation:6}),{sourceWidth:1080,sourceHeight:1920});});
 test('portrait originals are skipped before full transfer, retries respect current monitors, and likes can be removed',{timeout:20000},async t=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-orientation-')),data=path.join(dir,'data'),fixture=path.join(dir,'native.json');await fs.mkdir(data);
