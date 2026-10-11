@@ -19,7 +19,7 @@
 
 **Готовое приложение скачивается из [Releases](https://github.com/yurgenium/WallWave/releases)**. EXE не хранится среди исходников в корне GitHub.
 
-Для готового приложения нужен **Windows x64**. **Node.js устанавливать не требуется.**
+Для готового приложения нужен **Windows x64**.
 
 1. Запустите **`WallWave.exe`** из готовой сборки. Название скачанного файла также может быть `WallWave-Windows-x64.exe`.
 2. При первом запуске **выберите место размещения**. Программа создаст там папку **WallWave**. Следующие запуски используют сохранённое место; повторная распаковка не нужна.
@@ -47,7 +47,7 @@
 
 ### Getting started
 
-1. Run **`WallWave.exe`** from a compiled Windows x64 build. Some downloads use the name `WallWave-Windows-x64.exe`. **Node.js is not required.**
+1. Run **`WallWave.exe`** from a compiled Windows x64 build. Some downloads use the name `WallWave-Windows-x64.exe`.
 2. Choose an installation location on the first launch. A separate **WallWave** folder is created and reused later.
 3. Set your interests, screen preferences and image sources in **Settings**.
 4. Find and download wallpapers, select an image and click **Set wallpaper**. Rate images and optionally enable automatic search and rotation.
