@@ -3,6 +3,6 @@ const path=require('node:path');
 // Keep the actual wallpaper library in the user's home, shared by both launch paths.
 function libraryDirectory({home,dataDir,testHome}){
  if(dataDir)return path.resolve(dataDir);
- return path.join(testHome||path.join(home,'Wallbloom'),'library');
+ return path.join(testHome||path.join(home,'WallWave'),'library');
 }
 module.exports={libraryDirectory};

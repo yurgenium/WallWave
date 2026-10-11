@@ -31,7 +31,9 @@
 
 ### Обновление и ваши данные
 
-**Обои, предпочтения, оценки и ключи хранятся отдельно от программы**, в `%USERPROFILE%\Wallbloom\library`. Название папки сохранено для совместимости. Замена EXE не удаляет эту библиотеку.
+**Папка настроек и библиотеки:** `%USERPROFILE%\WallWave\library`.
+
+Чтобы открыть её, нажмите **Win + R**, вставьте этот путь и нажмите **Enter**. Здесь хранятся обои, настройки, предпочтения, оценки и ключи. **Замена EXE сохраняет ваши данные.** При первом запуске новой версии старая библиотека из папки Wallbloom переносится автоматически; исходная папка сохраняется.
 
 Перед обновлением завершите приложение через трей, затем запустите новую сборку. Ссылку на страницу выпусков можно открыть через **Настройки → Обновления → GitHub**. Обновления устанавливаются вручную.
 
@@ -54,7 +56,7 @@
 
 **Closing the window keeps the app in the tray.** Use the tray menu to quit completely before replacing the EXE with a newer build.
 
-**Personal wallpapers, ratings, preferences and keys stay outside the app**, in `%USERPROFILE%\Wallbloom\library`, and are excluded from this repository. Local Git checks help prevent accidental uploads.
+**Settings and library folder:** `%USERPROFILE%\WallWave\library`. Press **Win + R**, paste this path and press **Enter** to open it. Wallpapers, settings, preferences, ratings and keys stay here and are preserved when replacing the EXE. The old Wallbloom library is copied automatically on first launch; the original folder is kept. Personal data is excluded from this repository.
 
 **In development.** [Changelog (RU)](CHANGELOG.md) · [Privacy safeguards (RU)](wallbloom/docs/PRIVACY.md) · [Developer documentation (RU)](wallbloom/docs/DEVELOPMENT.md) · [MIT license](LICENSE)
 
