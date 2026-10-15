@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.13/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.13 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.14/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.14 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.13/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.13) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.14/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.14) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -58,6 +58,10 @@
 
 В карточках отображается **источник изображения**. Подробности и ссылка на исходную страницу доступны в меню дополнительных действий.
 
+Теги с запятой записываются в кавычках: `"название, с запятой", nature`. Нажатие на тег в карточке добавляет его целиком; правое нажатие управляет исключением.
+
+Отключение источника скрывает его неоценённые изображения. Удаление источника освобождает такие копии из библиотеки; оценённые изображения и личные исходные файлы сохраняются.
+
 ### 👍 Как работают оценки
 
 | Действие | Результат |
@@ -68,7 +72,9 @@
 | **Нейтрально** | Отмечает изображение как просмотренное, без обучения предпочтениям. |
 | **Отложить** | Переносит обои в отдельную подборку и исключает из автоматической смены. |
 
-Дизлайк и «Отложить» применяются через **5 секунд**; за это время действие можно отменить. Если исключить текущие обои, приложение подберёт замену из доступной библиотеки. Исходные файлы в подключённой личной папке сохраняются.
+Дизлайк применяется через **5 секунд**; за это время действие можно отменить. **«Отложить» применяется сразу**, без таймера. Если исключить текущие обои, приложение подберёт замену из доступной библиотеки. Исходные файлы в подключённой личной папке сохраняются.
+
+Кнопка рядом с левой стрелкой в просмотре возвращает к **трём последним оценённым обоям**; доступны также **Q / Й** и **↑**. Файлы старых дизлайков и исключений освобождаются, а оценки и отпечатки сохраняются для защиты от повторной загрузки. Три последних оценки и текущие обои временно сохраняют файлы для возврата.
 
 ### 🧠 Как включить ИИ и выбрать режим
 
@@ -145,7 +151,7 @@
 
 - **1–5** — нравится, не нравится, исключить, нейтрально, отложить.
 - **F** — кадрирование; **R** — сброс оценки.
-- **Backspace** — отмена отложенного дизлайка или действия «Отложить», пока идёт отсчёт.
+- **Backspace** — отмена дизлайка, пока идёт отсчёт; **Q / Й** или **↑** — возврат к трём последним оценённым обоям.
 - **F1 / F2 / F3** — быстрый доступ к категориям SFW / Sketchy / NSFW.
 
 </details>
@@ -160,7 +166,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.13/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.13). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.14/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.14). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -188,6 +194,10 @@ For later launches, open `WallWave.exe` inside the chosen **WallWave** folder. T
 
 Cards show the **image source**. The more-actions menu contains details and the original source link.
 
+Quote tag names that contain commas: `"tag, with comma", nature`. Clicking a card tag adds its whole name; right-clicking controls exclusion.
+
+Disabling a source hides its unreviewed images. Removing it clears those library copies; rated images and personal source files are preserved.
+
 ### 👍 Ratings
 
 | Action | Effect |
@@ -198,7 +208,9 @@ Cards show the **image source**. The more-actions menu contains details and the 
 | **Neutral** | Marks an image as reviewed without teaching a preference. |
 | **Later** | Moves it to a separate view and leaves it out of automatic rotation. |
 
-Dislike and Later have a **5-second undo period**. Excluding the current wallpaper selects a replacement from the available library. Files in connected personal source folders are preserved.
+Dislike has a **5-second undo period**. **Later applies immediately**, without a timer. Excluding the current wallpaper selects a replacement from the available library. Files in connected personal source folders are preserved.
+
+The button beside the previous arrow revisits **up to three recently rated images**; **Q** and **↑** provide the same action. Older disliked and excluded image files are cleared while ratings and fingerprints prevent repeat downloads. The latest three reviews and current wallpapers temporarily retain cached files.
 
 ### 🧠 Optional AI
 
@@ -253,7 +265,7 @@ Closing the window keeps WallWave running in the tray. Updates are installed man
 - **GitHub access error:** a private repository requires an account with access; otherwise obtain the ready-to-run EXE from the project owner.
 - **Reporting an issue:** include the app version, source and Activity message. API keys and a personal library are not needed.
 
-Preview controls can use **Enter and arrows** or **Space/Tab and A/D**, selected in Settings → Shortcuts. **1–5** apply ratings, **F** opens framing, **R** resets a rating, and **Backspace** cancels a pending Dislike or Later action. **F1 / F2 / F3** toggle SFW / Sketchy / NSFW.
+Preview controls can use **Enter and arrows** or **Space/Tab and A/D**, selected in Settings → Shortcuts. **1–5** apply ratings, **F** opens framing, **R** resets a rating, **Backspace** cancels a pending Dislike, and **Q** or **↑** revisits up to three recently rated wallpapers. **F1 / F2 / F3** toggle SFW / Sketchy / NSFW.
 
 </details>
 

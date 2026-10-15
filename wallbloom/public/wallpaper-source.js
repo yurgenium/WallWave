@@ -2,8 +2,8 @@ const clean=value=>typeof value==='string'?value.normalize('NFC').replace(/[\u00
 // Only provenance is displayed. Tags, filenames and old AI captions are not titles.
 export function wallpaperSource(item,providers=[],language='ru'){
  const local=language==='en'?'Local folder':'Локальная папка',unknown=language==='en'?'Unknown source':'Источник неизвестен';
- const provider=providers.find(p=>p.id===item.provider),name=clean(provider?.name);
- if(provider?.type==='local'&&['Local','Local folder','Локальная папка',''].includes(name))return local;
+ const provider=providers.find(p=>p.id===item.provider),name=clean(provider?.name||item.providerName);
+ if((provider?.type||item.sourceType)==='local'&&['Local','Local folder','Локальная папка',''].includes(name))return local;
  if(name)return name;
  const known={wallhaven:'Wallhaven',bing:'Bing',nasa:'NASA Images',commons:'Wikimedia Commons',local};
  if(Object.hasOwn(known,item.provider))return known[item.provider];

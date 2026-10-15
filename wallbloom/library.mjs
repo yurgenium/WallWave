@@ -10,7 +10,11 @@ import {atomic} from './persistence.mjs';
 export {atomic,persist,readPersistent} from './persistence.mjs';
 export async function initLibrary(dir){for(const folder of ['liked','disliked','blocked','pending','thumbnails','originals','rendered'])await fs.mkdir(path.join(dir,folder),{recursive:true});}
 export function imagePath(dir,item){return path.join(dir,folders[item.vote]||'pending',item.id+'.jpg');}
-export async function usage(dir){let n=0;for(const e of await fs.readdir(dir,{withFileTypes:true})){if(e.isSymbolicLink())continue;const f=path.join(dir,e.name);n+=e.isDirectory()?await usage(f):(await fs.stat(f)).size;}return n;}
+export async function usage(dir){
+ let entries;try{entries=await fs.readdir(dir,{withFileTypes:true});}catch(e){if(e.code==='ENOENT')return 0;throw e;}
+ let n=0;for(const e of entries){if(e.isSymbolicLink())continue;const f=path.join(dir,e.name);try{n+=e.isDirectory()?await usage(f):(await fs.stat(f)).size;}catch(error){if(error.code!=='ENOENT')throw error;}}
+ return n;
+}
 export async function downloadImage(dir,x,s,signal,onProgress,items=[]){
  const limit=s.maxItemMB*1024**2;let bytes;if(x.localSource){const stat=await fs.stat(x.localSource);if(stat.size>limit)throw new AppError('itemLimit');bytes=await fs.readFile(x.localSource);}else bytes=await fetchBytes(x.url,{limit,signal,onProgress});signal.throwIfAborted();
  const sharp=await sharpModule();sharp.concurrency(1);sharp.cache(false);const image=sharp(bytes,{limitInputPixels:64000000,animated:false});const meta=await image.metadata();if(!['jpeg','png','webp','avif'].includes(meta.format))throw new AppError('invalidImage');const dimensions=sourceDimensions(meta);if(s.allowPortrait===false&&dimensions.sourceHeight>dimensions.sourceWidth)throw new AppError('portraitSkipped');
