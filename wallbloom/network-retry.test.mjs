@@ -1,5 +1,12 @@
 import test from 'node:test';import assert from 'node:assert/strict';import dns from 'node:dns/promises';import https from 'node:https';import {EventEmitter} from 'node:events';import {Readable} from 'node:stream';import {fetchBytes} from './network.mjs';
 
+test('missing pages fail once with HTTP status; temporary rate limiting retries automatically',{timeout:10000},async t=>{
+ t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);let tries=0,status=404;
+ t.mock.method(https,'get',(_,options,resolve)=>{const req=new EventEmitter();req.setTimeout=()=>{};queueMicrotask(()=>{tries++;const res=Readable.from([Buffer.from('ok')]);res.statusCode=status===429&&tries>1?200:status;res.headers={};resolve(res);});return req;});
+ await assert.rejects(fetchBytes('https://example.com/page'),e=>e.status===404&&e.code==='sourceUnavailable');assert.equal(tries,1);
+ tries=0;status=429;assert.equal((await fetchBytes('https://example.com/page')).toString(),'ok');assert.equal(tries,2);
+});
+
 test('DNS rebinding and redirects cannot connect to private destinations',async t=>{
  let lookups=0,connections=0;
  t.mock.method(dns,'lookup',async()=>[{address:++lookups===1?'8.8.8.8':'127.0.0.1',family:4}]);

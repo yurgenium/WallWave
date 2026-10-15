@@ -2,7 +2,7 @@ import {allowed,score} from './core.mjs';
 
 export function visibleSettings(db){return db.workMode?{...db.settings,purity:'100',preset:'safe'}:db.settings;}
 export function eligible(db,settings=visibleSettings(db)){
- return db.items.filter(x=>x.downloaded&&allowed(x,settings)&&!['ban','dislike'].includes(x.vote)&&db.providers.some(p=>p.id===x.provider&&p.enabled));
+ return db.items.filter(x=>x.downloaded&&allowed(x,settings)&&!['ban','dislike','deferred'].includes(x.vote));
 }
 export function chooseNext(db,settings=visibleSettings(db),current=db.current,random=Math.random){
  const items=eligible(db,settings).filter(x=>x.id!==current);
@@ -15,11 +15,12 @@ export function chooseNext(db,settings=visibleSettings(db),current=db.current,ra
  const rank=x=>score(x,db.items,settings)-Math.abs(Math.log(((x.originalWidth||x.width||settings.width)/(x.originalHeight||x.height||settings.height))/(settings.width/settings.height)))*3;
  return pool.sort((a,b)=>rank(b)-rank(a)||(a.lastShown||0)-(b.lastShown||0))[0];
 }
+export function pendingCapacity(db){return db.settings.pendingTarget>0?Math.max(0,db.settings.pendingTarget-db.items.filter(x=>x.downloaded&&!x.vote).length):Infinity;}
 export function rankCandidates(items,db,random=Math.random){
  const ranked=items.map(x=>({x,rank:score(x,db.items,db.settings)})).sort((a,b)=>b.rank-a.rank);
  const result=[];while(ranked.length){const i=random()<db.settings.diversity/100?Math.floor(random()*ranked.length):0;result.push(ranked.splice(i,1)[0].x);}return result;
 }
-export function staleItems(db){const current=new Set([db.current,...Object.values(db.monitorCurrent||{})]);return db.items.filter(x=>x.downloaded&&!x.vote&&(x.showCount||0)>=db.settings.retireAfter&&!current.has(x.id));}
+export function staleItems(){return [];}
 export function hamming(a,b){if(!/^[0-9a-f]{16}$/.test(a||'')||!/^[0-9a-f]{16}$/.test(b||''))return Infinity;let value=BigInt('0x'+a)^BigInt('0x'+b),n=0;while(value){value&=value-1n;n++;}return n;}
 export function duplicateOf(candidate,items){return items.find(x=>x.id!==candidate.id&&x.downloaded&&((candidate.hash&&x.hash===candidate.hash)||(candidate.pixelHash&&x.pixelHash===candidate.pixelHash)||(hamming(x.visualHash,candidate.visualHash)<=5&&Math.abs((x.visualAspect||1)-(candidate.visualAspect||1))<.12&&sampleDistance(x.visualSample,candidate.visualSample)<9)));}
 function sampleDistance(a,b){if(!a||!b||a.length!==b.length)return Infinity;const aa=Buffer.from(a,'hex'),bb=Buffer.from(b,'hex');return aa.reduce((n,v,i)=>n+Math.abs(v-bb[i]),0)/aa.length;}

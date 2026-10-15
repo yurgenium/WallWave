@@ -19,4 +19,5 @@ jobs:
       - name: Check repository privacy
         run: node tools/check-repository.mjs
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check
       - run: pnpm test

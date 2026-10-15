@@ -26,7 +26,7 @@ async function migrate(){await fs.mkdir(path.dirname(data),{recursive:true});if(
 }
 async function openExternal(url){try{const u=new URL(url);if(u.protocol==='https:'&&!u.username&&!u.password)await shell.openExternal(u.href);}catch{}}
 function openWindow(){if(quitting||!base)return;if(window&&!window.isDestroyed()){if(window.isMinimized())window.restore();window.show();window.focus();return;}
- window=new BrowserWindow({width:1280,height:860,minWidth:720,minHeight:560,show:false,title:'WallWave',backgroundColor:'#101318',icon:path.join(__dirname,'icons/working.png'),autoHideMenuBar:true,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
+ window=new BrowserWindow({width:1280,height:860,minWidth:720,minHeight:560,show:false,title:'WallWave',backgroundColor:'#101318',icon:path.join(__dirname,'icons/app.ico'),autoHideMenuBar:true,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
  window.webContents.setWindowOpenHandler(({url})=>{openExternal(url);return {action:'deny'};});window.webContents.on('will-navigate',(event,url)=>{if(new URL(url).origin!==base){event.preventDefault();openExternal(url);}});window.webContents.on('will-attach-webview',event=>event.preventDefault());window.webContents.session.setPermissionRequestHandler((webContents,permission,callback)=>callback(false));
  window.once('ready-to-show',()=>{window?.show();});window.on('closed',()=>{window=null;if(!quitting&&!closedNotice){closedNotice=true;tray.displayBalloon({title:l().closeTitle,content:l().closeText,iconType:'info'});}});
  window.on('session-end',()=>{service?.send({type:'shutdown'});});window.loadURL(base).catch(()=>{failure=true;updateTray();});

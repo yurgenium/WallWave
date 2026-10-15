@@ -19,6 +19,7 @@ Var MutexHandle
 Var TestHome
 Var RuntimeFolder
 Var StageFolder
+Var PromoteRetries
 
 Page custom ChooseFolder LeaveFolder
 !insertmacro MUI_PAGE_INSTFILES
@@ -91,14 +92,14 @@ Function ChooseFolder
   Pop $0
   StrCmp $0 error 0 +2
     Abort
-  ${NSD_CreateLabel} 0 0 100% 42u "Где разместить WallWave?$\r$\nВыбери папку. Приложение всегда будет внутри отдельной папки WallWave."
+  ${NSD_CreateLabel} 0 0 100% 42u "Где разместить WallWave?$\r$\nВыберите папку. Приложение всегда будет внутри отдельной папки WallWave."
   Pop $0
   ${NSD_CreateLabel} 0 52u 100% 30u ""
   Pop $PathLabel
   ${NSD_CreateButton} 0 92u 110u 24u "Выбрать папку…"
   Pop $0
   ${NSD_OnClick} $0 BrowseFolder
-  ${NSD_CreateLabel} 0 126u 100% 28u "Нажми «Далее», чтобы распаковать и запустить приложение. Отмена оставит всё как было."
+  ${NSD_CreateLabel} 0 126u 100% 28u "Нажмите «Далее», чтобы распаковать и запустить приложение. Отмена оставит всё как было."
   Pop $0
   GetDlgItem $0 $HWNDPARENT 1
   SendMessage $0 ${WM_SETTEXT} 0 "STR:Распаковать"
@@ -137,7 +138,7 @@ Function ValidateRoot
     StrCmp $0 "." next
     StrCmp $0 ".." next
     FindClose $1
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Эта папка WallWave уже содержит другие файлы. Выбери другое место, чтобы их сохранить."
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Эта папка WallWave уже содержит другие файлы. Выберите другое место, чтобы их сохранить."
     Abort
   next:
     FindNext $1 $0
@@ -152,7 +153,7 @@ Function CheckNoLinks
   StrCmp $1 -1 valid
   IntOp $1 $1 & 1024
   StrCmp $1 0 valid
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Папки приложения не должны быть ссылками на другие папки. Выбери другое место."
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Папки приложения не должны быть ссылками на другие папки. Выберите другое место."
     Abort
   valid:
 FunctionEnd
@@ -182,7 +183,7 @@ Section
   check_partial:
   ; Each version has its own folder. Existing files and previous versions are preserved.
   IfFileExists "$RuntimeFolder\*" 0 fresh
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Папка этой версии уже существует, но установка не завершена. Выбери другое место для WallWave."
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Папка этой версии уже существует, но установка не завершена. Выберите другое место для WallWave."
     SetErrorLevel 3
     Quit
   fresh:
@@ -199,8 +200,15 @@ Section
   IfFileExists "$StageFolder\resources\app.asar" 0 failed
   SetOutPath "$InstallRoot"
   IfErrors failed
+  StrCpy $PromoteRetries 10
+  promote_runtime:
+  ClearErrors
   Rename "$StageFolder" "$RuntimeFolder"
-  IfErrors failed
+  IfErrors 0 copy_launcher
+  IntOp $PromoteRetries $PromoteRetries - 1
+  StrCmp $PromoteRetries 0 failed
+  Sleep 500
+  Goto promote_runtime
   copy_launcher:
   SetOutPath "$InstallRoot"
   StrCmp $EXEPATH "$InstallRoot\WallWave.exe" copied
@@ -240,7 +248,7 @@ Section
   SetErrorLevel 0
   Goto done
   failed:
-  MessageBox MB_OK|MB_ICONSTOP "Не удалось разместить WallWave. Проверь свободное место и доступ к выбранной папке."
+  MessageBox MB_OK|MB_ICONSTOP "Не удалось разместить WallWave. Проверьте свободное место и доступ к выбранной папке."
   SetErrorLevel 4
   done:
 SectionEnd

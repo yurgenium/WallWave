@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {randomUUID,createHash} from 'node:crypto';
+import {createHash} from 'node:crypto';
 import {AppError,sharpModule,defaultFrame,validateFrame} from './core.mjs';
+
 
 export {defaultFrame,validateFrame};
 export function sourcePath(dir,item){return path.join(dir,'originals',item.id+'.source');}
@@ -23,4 +24,24 @@ export async function renderFrame(file,width,height,input,quality=88){
  if(frame.fit==='cover')return image.jpeg({quality}).toBuffer();
  const layer=await image.png().toBuffer();return sharp({create:{width,height,channels:3,background:'#10141a'}}).composite([{input:layer,left,top}]).jpeg({quality}).toBuffer();
 }
-export async function renderDesktop(dir,item,settings,monitorId,width,height){const bytes=await renderFrame(await frameSource(dir,item),width,height,effectiveFrame(item,settings,monitorId),settings.quality);const {usage}=await import('./library.mjs');if(await usage(dir)+bytes.length>settings.maxTotalGB*1024**3)throw new AppError('diskLimit');const name=createHash('sha256').update(monitorId||'desktop').digest('hex').slice(0,16)+'-'+randomUUID()+'.jpg',file=path.join(dir,'rendered',name);await fs.writeFile(file,bytes);return file;}
+export async function renderDesktop(dir,item,settings,monitorId,width,height){
+ const source=await frameSource(dir,item),stat=await fs.stat(source),frame=effectiveFrame(item,settings,monitorId);
+ const key=JSON.stringify([source,stat.size,stat.mtimeMs,monitorId||'desktop',width,height,frame,settings.quality]);
+ const file=path.join(dir,'rendered',createHash('sha256').update(key).digest('hex')+'.jpg');
+ try{if((await fs.stat(file)).isFile())return file;}catch(e){if(e.code!=='ENOENT')throw e;}
+ const bytes=await renderFrame(source,width,height,frame,settings.quality);
+ // A full download library must still allow changing the desktop. These generated
+ // frames are bounded by the monitor count; apply removes each previous frame.
+ const temporary=file+'.part';try{await fs.writeFile(temporary,bytes);await fs.rename(temporary,file);}finally{await fs.rm(temporary,{force:true});}return file;
+}
+
+export const renderedName=/^(?:[a-f0-9]{64}|[a-f0-9]{16}-[a-f0-9-]{36})\.jpg$/;
+// Only our generated files are eligible. Keep every monitor's currently used file.
+export async function pruneRendered(dir,keep=[]){
+ const folder=path.join(dir,'rendered'),key=file=>process.platform==='win32'?file.toLowerCase():file,protectedFiles=new Set(keep.filter(Boolean).map(file=>key(path.resolve(folder,file))));
+ if((await fs.lstat(folder)).isSymbolicLink())return;
+ for(const entry of await fs.readdir(folder,{withFileTypes:true})){
+  if(!entry.isFile()||!renderedName.test(entry.name))continue;
+  const file=path.join(folder,entry.name);if(!protectedFiles.has(key(file)))await fs.rm(file,{force:true}).catch(e=>{if(!['EBUSY','EPERM','EACCES'].includes(e.code))throw e;});
+ }
+}

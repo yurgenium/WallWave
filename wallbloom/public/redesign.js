@@ -11,6 +11,8 @@ export const icons = {
   like:'<path d="M7 10v11H3V10Zm0 0 5-8c3 0 2 5 1 8h6c2 0 2 2 1 5l-2 6H7"/>',
   dislike:'<path d="M7 14V3H3v11Zm0 0 5 8c3 0 2-5 1-8h6c2 0 2-2 1-5l-2-6H7"/>',
   ban:'<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',
+  neutral:'<circle cx="12" cy="12" r="9"/><path d="M8 15h8M8 9h.01M16 9h.01"/>',
+  deferred:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   folder:'<path d="M3 6h6l2 2h10v12H3Z"/>',
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
 };
@@ -29,7 +31,6 @@ export function setupRedesign({t,getLanguage,openSettings,retryPending}){
   const desktopControls=document.querySelector('.library-controls');desktopControls.append($('restore'));document.querySelector('[data-settings-pane="monitors"]').prepend(desktopControls);
   // General settings stay reachable at the bottom of the rail.
   rail.querySelector('.bottom').prepend(nav.querySelector('[data-view="settings"]'));
-  document.querySelector('.purity-control').classList.add('settings-content-control');document.querySelector('[data-settings-pane="interests"]').prepend(document.querySelector('.purity-control'));
   document.querySelector('[data-settings-pane="ai"]').prepend(document.querySelector('.analyze-action'));
   const languageLabel=$('language').closest('label');document.querySelector('[data-settings-pane="interests"]').append(languageLabel,$('libraryInfo'));
   const status=$('status');status.classList.add('floating-status');status.dataset.expanded='false';const expand=document.createElement('button');expand.id='statusToggle';expand.type='button';expand.append(icon('up'));expand.setAttribute('aria-expanded','false');expand.setAttribute('aria-controls','statusDetails');expand.onclick=()=>{const on=status.dataset.expanded!=='true';status.dataset.expanded=String(on);expand.setAttribute('aria-expanded',String(on));$('statusDetails').hidden=!on;};status.insertBefore(expand,$('jobText').nextSibling);
