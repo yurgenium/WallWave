@@ -10,7 +10,8 @@ export async function enrich(item,key,signal){if(item.nasaId)return enrichNASA(i
 export function validateProvider(p){if(!p||!['wallhaven','local','feed','bing','nasa','commons'].includes(p.type)||typeof p.name!=='string'||!p.name.trim()||p.name.length>80||typeof p.enabled!=='boolean')throw new AppError('invalidProvider');if(p.type==='local'&&(typeof p.folder!=='string'||!path.isAbsolute(p.folder)))throw new AppError('invalidProvider');if(p.type==='feed'){let u;try{u=new URL(p.url);}catch{throw new AppError('invalidProvider');}if(u.protocol!=='https:'||u.username||u.password)throw new AppError('invalidProvider');}return p;}
 // A thousand local exclusions must not produce an oversized HTTP URL.
 // Remaining exclusions are still checked after enrichment, before the original download.
-export function wallhavenQuery(tag,excludedTags){let query=tag;for(const value of excludedTags){const next=[query,'-'+value].filter(Boolean).join(' ');if(encodeURIComponent(next).length>1500)break;query=next;}return query;}
+const wallhavenTerm=tag=>/^[\p{L}\p{N}_][\p{L}\p{N}_-]*$/u.test(tag)?tag:JSON.stringify(tag);
+export function wallhavenQuery(tag,excludedTags){let query=tag?wallhavenTerm(tag):'';for(const value of excludedTags){const next=[query,'-'+wallhavenTerm(value)].filter(Boolean).join(' ');if(encodeURIComponent(next).length>1500)break;query=next;}return query;}
 // Retain both search modes; switching diversity must not restart the catalogue.
 export function searchCursor(state,id,signature,mode){
  const previous=state[id]||{},saved=previous[mode]||(previous.signature===signature?previous:null);

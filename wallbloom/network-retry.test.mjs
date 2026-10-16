@@ -1,4 +1,10 @@
 import test from 'node:test';import assert from 'node:assert/strict';import dns from 'node:dns/promises';import https from 'node:https';import {EventEmitter} from 'node:events';import {Readable} from 'node:stream';import {fetchBytes,RequestGate} from './network.mjs';
+import {wallhavenQuery} from './providers.mjs';
+
+test('Wallhaven keeps multiword tags and excluded phrases in one search term',()=>{
+ assert.equal(wallhavenQuery('video games',['simple background','artist name','landscape']),'"video games" -"simple background" -"artist name" -landscape');
+ assert.equal(wallhavenQuery('', ['name, with comma','a "quote"']),' -"name, with comma" -"a \\"quote\\""'.trim());
+});
 
 test('shared API gate spaces requests, respects cooldown and cancels waiting requests',async()=>{
  let now=100000;const waits=[],gate=new RequestGate({now:()=>now,wait:async ms=>{waits.push(ms);now+=ms;}});
