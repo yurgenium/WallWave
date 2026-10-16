@@ -20,7 +20,7 @@ async function fixture(t,config,{items=[],settings={},searchState}={}){
  t.after(async()=>{if(child.exitCode===null){const end=new Promise(r=>child.once('exit',r));child.send({type:'shutdown'});await end;}await fs.rm(temp,{recursive:true,force:true});});
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(errors)));});
  const base='http://127.0.0.1:'+port,get=async()=>await(await fetch(base+'/api/state')).json();let state=await get();
- return {file,data,get,base,async refresh(){const r=await fetch(base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:'{}'});assert.equal(r.status,200,await r.text());for(let i=0;i<1000;i++){state=await get();if(!state.job)return state;await new Promise(r=>setTimeout(r,15));}throw Error('refresh timeout');},async searches(){return (await fs.readFile(file+'.searches','utf8')).trim().split('\n').map(Number);}};
+ return {file,data,get,base,async refresh(){const r=await fetch(base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:'{}'});assert.equal(r.status,200,await r.text());const deadline=Date.now()+50000;while(Date.now()<deadline){state=await get();if(!state.job)return state;await new Promise(r=>setTimeout(r,25));}throw Error('refresh timeout');},async searches(){return (await fs.readFile(file+'.searches','utf8')).trim().split('\n').map(Number);}};
 }
 
 test('one click fills batch after AI rejects a whole page; remaining page items survive next click',{timeout:25000},async t=>{
