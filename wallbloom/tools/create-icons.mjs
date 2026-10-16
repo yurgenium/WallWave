@@ -26,6 +26,8 @@ function svg(status=''){
  </svg>`);
 }
 
+await fs.writeFile(path.resolve(dir,'../../public/app-icon.svg'),svg());
+
 for(const name of ['working','waiting','paused','error']){
  await sharp(svg(name)).resize(64,64).png().toFile(path.join(dir,name+'.png'));
 }

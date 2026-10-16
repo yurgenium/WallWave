@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.17/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.17 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.18/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.18 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.17/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.17) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.18/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.18) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -142,6 +142,8 @@
 
 **Скачано меньше, чем указано в порции.** Проверьте сообщение о результате, «Журнал», лимит непросмотренных обоев и включённые источники. В строгом режиме ИИ может отклонить большую часть вариантов.
 
+**Фоновые загрузки не появляются.** Включите автоматический подбор в настройках и проверьте статус автоматизации: при паузе или высокой нагрузке он ожидает подходящих условий. Wallhaven обрабатывает запросы последовательно; при ограничении частоты приложение выдерживает паузу. Прогресс поиска по интересам и для разнообразия сохраняется отдельно.
+
 **Подходящих обоев нет.** Проверьте интересы, исключённые теги и категории. Попробуйте более общие теги или другой источник. Новые изображения могут отсутствовать и в самом источнике.
 
 **Ошибка загрузки.** В «Журнале» указано, что произошло: проблема сети, ограничение источника, недоступное изображение или лимит данных. Короткие временные сетевые сбои повторяются автоматически; если ошибка осталась, можно повторить подбор позднее.
@@ -180,7 +182,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.17/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.17). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.18/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.18). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -284,6 +286,7 @@ Closing the window keeps WallWave running in the tray. Updates are installed man
 <summary><strong>❓ Troubleshooting and shortcuts</strong></summary>
 
 - **Fewer downloads than requested:** check the result, Activity log, unreviewed limit and enabled sources. Strict AI screening may reject many candidates.
+- **No background downloads:** enable automatic refresh in Settings and check the automation status. Paused or busy systems wait for suitable conditions. Wallhaven requests are paced; rate limits trigger a cooldown. Interest and discovery searches retain separate page positions.
 - **No new matching wallpapers:** check interests, excluded tags and content categories; consider broader tags or another source. The source itself may have no new images.
 - **Download error:** the Activity log distinguishes network issues, source rate limits, unavailable files and storage limits. Short temporary failures are retried automatically; persistent problems can be retried later.
 - **NSFW on Wallhaven:** enable the category and add a personal Wallhaven API key in the source settings. SFW is the default.

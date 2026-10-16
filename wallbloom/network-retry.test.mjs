@@ -1,4 +1,20 @@
-import test from 'node:test';import assert from 'node:assert/strict';import dns from 'node:dns/promises';import https from 'node:https';import {EventEmitter} from 'node:events';import {Readable} from 'node:stream';import {fetchBytes} from './network.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import dns from 'node:dns/promises';import https from 'node:https';import {EventEmitter} from 'node:events';import {Readable} from 'node:stream';import {fetchBytes,RequestGate} from './network.mjs';
+
+test('shared API gate spaces requests, respects cooldown and cancels waiting requests',async()=>{
+ let now=100000;const waits=[],gate=new RequestGate({now:()=>now,wait:async ms=>{waits.push(ms);now+=ms;}});
+ await gate.acquire();await gate.acquire();await gate.acquire();assert.deepEqual(waits,[1500,1500]);
+ assert.equal(gate.block(120000),120000);assert.equal(gate.block(1000),120000);
+ await assert.rejects(gate.acquire(),e=>e.code==='rateLimited'&&e.retryAfter===120000);
+ now+=120000;await gate.acquire();assert.equal(gate.block(),60000);
+ const cancellable=new RequestGate({interval:60000});await cancellable.acquire();const controller=new AbortController(),pending=cancellable.acquire(controller.signal);controller.abort();await assert.rejects(pending,{name:'AbortError'});
+});
+
+test('Wallhaven 429 without Retry-After stops retries and shares cooldown between search and details',async t=>{
+ t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);let connections=0;
+ t.mock.method(https,'get',(_,options,resolve)=>{connections++;const req=new EventEmitter();req.setTimeout=()=>{};queueMicrotask(()=>{const res=Readable.from([]);res.statusCode=429;res.headers={};resolve(res);});return req;});
+ await assert.rejects(fetchBytes('https://wallhaven.cc/api/v1/search'),e=>e.code==='rateLimited'&&e.retryAfter>=59000);
+ await assert.rejects(fetchBytes('https://wallhaven.cc/api/v1/w/example'),{code:'rateLimited'});assert.equal(connections,1);
+});
 
 test('missing pages fail once with HTTP status; temporary rate limiting retries automatically',{timeout:10000},async t=>{
  t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);let tries=0,status=404;

@@ -8,7 +8,9 @@ import {defaults} from './core.mjs';
 import {initLibrary,imagePath} from './library.mjs';
 test('background timer clears expired negative files without another rating or wallpaper change',{timeout:40000},async t=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-expired-votes-')),data=path.join(dir,'library'),fixture=path.join(dir,'native.json');await initLibrary(data);await fs.writeFile(fixture,'{}');
- const items=['ban','dislike','like'].map((vote,i)=>({id:'item'+i,vote,downloaded:true,provider:'local',tags:[],rating:'safe',visualHash:'0123456789abcdef',rejectedAt:Date.now()-299000,hash:'hash'+i}));for(const item of items)await fs.writeFile(imagePath(data,item),'cached');
+ // Leave time for the child process to start before expiry; the 15-second tick
+ // must perform the cleanup, rather than the startup cleanup winning the race.
+ const items=['ban','dislike','like'].map((vote,i)=>({id:'item'+i,vote,downloaded:true,provider:'local',tags:[],rating:'safe',visualHash:'0123456789abcdef',rejectedAt:Date.now()-290000,hash:'hash'+i}));for(const item of items)await fs.writeFile(imagePath(data,item),'cached');
  await fs.writeFile(path.join(data,'state.json'),JSON.stringify({settings:{...defaults,ai:'off',autoRefresh:false,rotation:false},items,providers:[{id:'local',name:'Local',type:'local',folder:dir,enabled:true}],pages:{},recentReviews:items.map(item=>({id:item.id,time:item.rejectedAt}))}));
  const child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_NATIVE_FIXTURE:fixture,WALLBLOOM_PORT:'0'},silent:true,windowsHide:true});child.stdout.resume();child.stderr.resume();
  t.after(async()=>{if(child.exitCode===null){const ended=new Promise(resolve=>child.once('exit',resolve));child.send({type:'shutdown'});await ended;}await fs.rm(dir,{recursive:true,force:true});});

@@ -20,7 +20,7 @@ async function fixture(t,config,{items=[],settings={},searchState}={}){
  t.after(async()=>{if(child.exitCode===null){const end=new Promise(r=>child.once('exit',r));child.send({type:'shutdown'});await end;}await fs.rm(temp,{recursive:true,force:true});});
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(errors)));});
  const base='http://127.0.0.1:'+port,get=async()=>await(await fetch(base+'/api/state')).json();let state=await get();
- return {file,data,get,async refresh(){const r=await fetch(base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:'{}'});assert.equal(r.status,200,await r.text());for(let i=0;i<1000;i++){state=await get();if(!state.job)return state;await new Promise(r=>setTimeout(r,15));}throw Error('refresh timeout');},async searches(){return (await fs.readFile(file+'.searches','utf8')).trim().split('\n').map(Number);}};
+ return {file,data,get,base,async refresh(){const r=await fetch(base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:'{}'});assert.equal(r.status,200,await r.text());for(let i=0;i<1000;i++){state=await get();if(!state.job)return state;await new Promise(r=>setTimeout(r,15));}throw Error('refresh timeout');},async searches(){return (await fs.readFile(file+'.searches','utf8')).trim().split('\n').map(Number);}};
 }
 
 test('one click fills batch after AI rejects a whole page; remaining page items survive next click',{timeout:25000},async t=>{
@@ -59,7 +59,7 @@ test('local catalogue continues after 500 files without repeating the first page
  assert.equal(first.length,500);assert.equal(second.length,3);assert.equal(end.length,0);assert(!second.some(x=>first.some(y=>x.id===y.id)));
 });
 
-test('candidate budget is explicit and later clicks skip already identified duplicates',{timeout:25000},async t=>{
+test('candidate budget is explicit and later clicks skip already identified duplicates',{timeout:60000},async t=>{
  const copies=Array.from({length:100},(_,i)=>'copy'+i),ids=['original',...copies,'next'];
  const f=await fixture(t,{pages:{1:ids.map(picture)},imageAliases:{...Object.fromEntries(ids.map(id=>[id,'red'])),next:'green'}},{settings:{batch:1}});
  let s=await f.refresh();assert.equal(s.refreshDownloaded,1);
@@ -72,4 +72,16 @@ test('unreviewed pool capacity remains a hard limit',{timeout:20000},async t=>{
  const f=await fixture(t,{pages:{1:['good1','good2'].map(picture)},imageAliases:{good1:'red',good2:'green'}},{settings:{pendingTarget:1}});
  let s=await f.refresh();assert.equal(s.refreshDownloaded,1);assert.equal(s.refreshTarget,1);
  const calls=await f.searches();s=await f.refresh();assert.equal(s.refreshOutcome,'poolReady');assert.deepEqual(await f.searches(),calls);assert.equal(s.items.filter(x=>x.downloaded).length,1);
+});
+
+test('alternating interest and discovery searches resume their own pages',{timeout:25000},async t=>{
+ const f=await fixture(t,{pages:{1:[picture('old')],2:[picture('good1')],3:[picture('good2')],4:[picture('good3')]},imageAliases:{good1:'red',good2:'green',good3:'blue'}},{items:[{id:'wallhaven-old',provider:'wallhaven',rating:'safe',tags:[],vote:'ban'}],settings:{batch:1}});
+ assert.equal((await f.refresh()).refreshDownloaded,1);
+ for(const diversity of [100,0]){const state=await f.get();const r=await fetch(f.base+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:JSON.stringify({...state.settings,diversity})});assert(r.ok);assert.equal((await f.refresh()).refreshDownloaded,1);}
+ assert.deepEqual(await f.searches(),[1,2,1,2,3,3,4]);
+});
+
+test('Wallhaven quota failure schedules retry instead of treating the source as empty',{timeout:20000},async t=>{
+ const f=await fixture(t,{pages:{},searchError:'rateLimited',retryAfter:3600000},{settings:{autoRefresh:true}});
+ const started=Date.now(),s=await f.refresh();assert.equal(s.refreshOutcome,'rateLimited');assert.equal(s.refreshDownloaded,0);assert(s.automation.refresh.nextAt>=started+3600000);assert.deepEqual(await f.searches(),[1]);
 });

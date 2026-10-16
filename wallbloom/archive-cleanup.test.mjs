@@ -7,6 +7,17 @@ import {defaults} from './core.mjs';
 import {initLibrary} from './library.mjs';
 import {exportLibrary, restoreLibrary} from './archive.mjs';
 
+test('new WallWave export name and legacy Wallbloom exports both restore',async t=>{
+ const parent=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-export-names-'));t.after(()=>fs.rm(parent,{recursive:true,force:true}));
+ for(const legacy of [false,true]){
+  const dir=path.join(parent,'library-'+legacy);await initLibrary(dir);
+  const state={settings:defaults,providers:[],items:[]};await fs.writeFile(path.join(dir,'state.json'),JSON.stringify(state));
+  const exported=await exportLibrary(dir,state,parent);await fs.access(path.join(exported,'wallwave-export.json'));
+  if(legacy)await fs.rename(path.join(exported,'wallwave-export.json'),path.join(exported,'wallbloom-export.json'));
+  const result=await restoreLibrary(dir,exported);assert.equal(result.state.paused,true);assert.deepEqual(result.state.items,[]);
+ }
+});
+
 test('failed archive operations remove partial copies and preserve the live library', async t => {
   const parent = await fs.mkdtemp(path.join(os.tmpdir(), 'wallwave-archive-cleanup-'));
   t.after(() => fs.rm(parent, {recursive: true, force: true}));

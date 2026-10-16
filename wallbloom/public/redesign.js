@@ -19,7 +19,7 @@ export const icons = {
 export function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');svg.innerHTML=icons[name];return svg;}
 export function setupRedesign({t,getLanguage,openSettings,retryPending}){
   const $=id=>document.getElementById(id),rail=document.querySelector('aside');
-  rail.id='navigation';rail.querySelector('.brand').innerHTML='<span class="mark">W</span><span class="brand-name">'+document.title+'</span>';
+  rail.id='navigation';rail.querySelector('.brand').innerHTML='<img class="app-mark" src="/app-icon.svg" width="32" height="32" alt=""><span class="brand-name">'+document.title+'</span>';
   const label=()=>getLanguage()==='ru',navButton=(id,name,kind,fn)=>{const b=document.createElement('button');b.id=id;b.type='button';b.dataset.redesignLabel=name;b.append(icon(kind),document.createElement('span'));b.onclick=fn;return b;};
   const toggle=navButton('navToggle','expand','menu',()=>{const expanded=!document.body.classList.contains('nav-expanded');document.body.classList.toggle('nav-expanded',expanded);toggle.setAttribute('aria-expanded',String(expanded));localStorage.setItem('wallbloom-nav-expanded',String(expanded));update();});toggle.setAttribute('aria-controls','navigation');rail.querySelector('.brand').after(toggle);
   document.body.classList.toggle('nav-expanded',localStorage.getItem('wallbloom-nav-expanded')==='true');toggle.setAttribute('aria-expanded',String(document.body.classList.contains('nav-expanded')));
