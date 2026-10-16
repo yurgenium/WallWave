@@ -59,3 +59,25 @@
 .cleanup-error { color: #ffb5b5; }
 .tag-cleanup { margin-top: 16px; }
 input.shortcut-recording { outline: 2px solid #8ef0cd; outline-offset: 2px; }
+.tag-settings-field { min-width: 0; }
+.tag-settings-field textarea { width: 100%; box-sizing: border-box; min-height: 80px; resize: vertical; }
+.tag-editor { margin-top: 12px; }
+.tag-editor input { width: 100%; box-sizing: border-box; }
+.tag-editor .tag-count { margin: 8px 0; font-size: 12px; }
+.tag-error { color: #ffb5b5; margin: 6px 0; }
+.tag-error:empty { display: none; }
+.tag-results { padding: 0; margin: 8px 0; list-style: none; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; max-height: 230px; overflow-y: auto; }
+.tag-results li { display: flex; align-items: center; gap: 4px; max-width: 100%; padding: 3px 6px 3px 9px; border-radius: 8px; background: #29313a; }
+.tag-results li span { min-width: 0; overflow-wrap: anywhere; }
+.tag-results li button { flex: 0 0 auto; padding: 2px 7px; min-width: 26px; min-height: 28px; }
+.tag-pagination { display: flex; gap: 8px; margin: 8px 0; }
+.tag-pagination[hidden] { display: none; }
+.tag-editor small { display: block; color: #aebbc7; line-height: 1.4; }
+.show-cleanup-row { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(130px, 1fr); gap: 12px; align-items: center; margin: 10px 0; }
+.show-cleanup-row > label:first-child { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.show-cleanup-row input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 18px; margin: 0; accent-color: var(--accent); }
+.show-cleanup-row input[type="number"] { width: 100%; box-sizing: border-box; }
+.show-cleanup p { line-height: 1.5; }
+@media (max-width: 480px) { .show-cleanup-row { grid-template-columns: 1fr; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid #39434c; } }
+@media (max-width: 1000px) { .settings-save { bottom: calc(var(--status-height, 160px) + 28px); } }
+@media (max-width: 1000px) { body[data-view="settings"] main { padding-bottom: calc(var(--status-height, 160px) + 130px); } }

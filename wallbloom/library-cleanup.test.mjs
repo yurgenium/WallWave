@@ -13,7 +13,7 @@ test('rejected files are removed but ratings and fingerprints persist; three rec
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-rejected-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));await initLibrary(dir);
  const items=Array.from({length:6},(_,i)=>({id:'x'+i,provider:'p',vote:i===5?'like':i%2?'dislike':'ban',rating:'safe',tags:[],downloaded:true,hasOriginal:true,hash:'hash'+i,embedding:[i]}));
  for(const x of items)for(const file of [imagePath(dir,x),sourcePath(dir,x),path.join(dir,'thumbnails',x.id+'.jpg')])await fs.writeFile(file,'image');
- const db={items,current:'x0',recentReviews:[{id:'x1'},{id:'x2'},{id:'x3'}]};assert.equal(await purgeRejectedFiles(dir,db),1);assert.equal(items[4].vote,'ban');assert.equal(items[4].downloaded,false);assert.equal(items[4].hash,'hash4');assert.deepEqual(items[4].embedding,[4]);
+ const db={items,current:'x0',recentReviews:[{id:'x1',time:Date.now()},{id:'x2',time:Date.now()},{id:'x3',time:Date.now()}]};assert.equal(await purgeRejectedFiles(dir,db),1);assert.equal(items[4].vote,'ban');assert.equal(items[4].downloaded,false);assert.equal(items[4].hash,'hash4');assert.deepEqual(items[4].embedding,[4]);
  await assert.rejects(fs.access(sourcePath(dir,items[4])));for(const x of items.filter(x=>x.id!=='x4'))await fs.access(imagePath(dir,x));
  assert.equal(duplicateOf({id:'copy',hash:'hash4'},items)?.id,'x4');
 });

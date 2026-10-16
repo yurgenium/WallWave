@@ -5,9 +5,15 @@ async function clearItem(dir,item){
  await removeCached(dir,item);
  item.downloaded=false;item.hasOriginal=false;item.cachePurged=true;item.bytes=0;item.originalBytes=0;delete item.thumbnailVersion;
 }
-export async function purgeRejectedFiles(dir,db){
- const keep=protectedCacheIds(db);let removed=0;
- for(const item of db.items){if(!['ban','dislike'].includes(item.vote)||keep.has(item.id)||item.cachePurged&&!item.downloaded&&!item.hasOriginal)continue;const hadFile=item.downloaded||item.hasOriginal;await clearItem(dir,item);if(hadFile)removed++;}
+export const rejectedCleanupDelay=5*60000;
+export function rejectedCleanupCandidates(db,now=Date.now()){
+ const current=new Set([db.current,...Object.values(db.monitorCurrent||{})].filter(Boolean));
+ return db.items.filter(item=>['ban','dislike'].includes(item.vote)&&(item.downloaded||item.hasOriginal)&&!current.has(item.id)&&now-(item.rejectedAt??db.recentReviews?.find(review=>review.id===item.id)?.time??0)>=rejectedCleanupDelay);
+}
+export async function purgeRejectedFiles(dir,db,now=Date.now()){
+ let removed=0;const ids=new Set();
+ for(const item of rejectedCleanupCandidates(db,now)){await clearItem(dir,item);ids.add(item.id);removed++;}
+ db.recentReviews=(db.recentReviews||[]).filter(review=>!ids.has(review.id));
  return removed;
 }
 export async function removeProviderCopies(dir,db,providerId){
@@ -27,12 +33,27 @@ export function cleanupCandidates(db,scope){
   const provider=db.providers.find(p=>p.id===scope.providerId);
   if(!provider||provider.enabled)throw Error('cleanupSourceEnabled');
  }else if(scope.kind!=='tags')throw Error('invalidRequest');
- return db.items.filter(x=>(!x.cleanupRemoved||x.downloaded||x.hasOriginal)&&(scope.kind==='provider'?x.provider===scope.providerId:matchesExcludedTags(x,db.settings.excludedTags)));
+ const excluded=new Set(JSON.parse(tagKey(db.settings.excludedTags)));
+ return db.items.filter(x=>(!x.cleanupRemoved||x.downloaded||x.hasOriginal)&&(scope.kind==='provider'?x.provider===scope.providerId:(x.tags||[]).some(t=>excluded.has(t.trim().toLowerCase()))));
 }
 export function syncTagCleanup(db,now=Date.now()){
  const key=tagKey(db.settings.excludedTags),count=cleanupCandidates(db,{kind:'tags'}).length;
  const dueAt=count?(db.tagCleanup?.key===key&&db.tagCleanup.dueAt||now+tagCleanupDelay):null;
  db.tagCleanup={key,dueAt};return {count,dueAt};
+}
+export function shownCleanupCandidates(db){
+ const current=new Set([db.current,...Object.values(db.monitorCurrent||{})].filter(Boolean));
+ return db.items.filter(item=>{const rule=db.settings.cleanupAfterShows?.[item.vote||'pending'];return item.downloaded&&!current.has(item.id)&&rule?.enabled&&(item.showCount||0)>=rule.shows;});
+}
+export function syncShownCleanup(db,now=Date.now()){
+ const key=JSON.stringify(db.settings.cleanupAfterShows||{}),count=shownCleanupCandidates(db).length;
+ const dueAt=count?(db.showCleanup?.key===key&&db.showCleanup.dueAt||now+tagCleanupDelay):null;
+ db.showCleanup={key,dueAt};return {count,dueAt};
+}
+export function dueCleanupCandidates(db,now=Date.now()){
+ const tags=db.tagCleanup?.dueAt&&db.tagCleanup.dueAt<=now?cleanupCandidates(db,{kind:'tags'}):[];
+ const shown=db.showCleanup?.dueAt&&db.showCleanup.dueAt<=now?shownCleanupCandidates(db):[];
+ return [...new Map([...tags,...shown].map(item=>[item.id,item])).values()];
 }
 export async function purgeCopies(dir,db,items){
  let removed=0,bytes=0;const ids=new Set();

@@ -1,6 +1,13 @@
 // CSV-style lists keep commas inside quoted tag names intact.
+export const maxTags=1000,maxTagLength=80;
+export function tagListError(tags){
+ if(!Array.isArray(tags)||tags.some(t=>typeof t!=='string'))return 'invalidSettings';
+ if(tags.length>maxTags)return 'tooManyTags';
+ if(tags.some(t=>t.length>maxTagLength))return 'tagTooLong';
+ return null;
+}
 export function parseTags(input){
- const result=[];let i=0;
+ const result=[],seen=new Set();let i=0;
  while(i<input.length){
   while(i<input.length&&/[\s,]/.test(input[i]))i++;
   if(i>=input.length)break;
@@ -12,7 +19,7 @@ export function parseTags(input){
    while(i<input.length&&/[ \t]/.test(input[i]))i++;
    if(i<input.length&&!/[,\r\n]/.test(input[i]))throw Error('invalidTagList');
   }else{while(i<input.length&&!/[,\r\n]/.test(input[i]))value+=input[i++];}
-  value=value.trim();if(value&&!result.some(x=>x.toLowerCase()===value.toLowerCase()))result.push(value);
+  value=value.trim();const key=value.toLowerCase();if(value&&!seen.has(key)){seen.add(key);result.push(value);}
  }
  return result;
 }

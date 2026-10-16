@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.16/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.16 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.17/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.17 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.16/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.16) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.17/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.17) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -64,6 +64,8 @@
 
 ### 🧹 Очистка библиотеки
 
+- **По количеству показов:** в «Настройки → Автоматизация» можно отдельно выбрать папки и задать каждой порог **от 1 до 1000 показов**. Новые правила изначально выключены. Показ засчитывается после 30 секунд видимого рабочего стола и сохраняется в общем счётчике обоев независимо от монитора; одновременный показ одного изображения на нескольких экранах считается одним. Текущие обои защищены до смены на всех мониторах. Затем начинается минутная отсрочка, в течение которой можно отключить правило и сохранить настройки. Уже накопленные показы учитываются. Количество показов видно в меню «Другие действия» карточки.
+
 - **Обои отключённого источника:** откройте «Источники», отключите нужный источник и нажмите **«Удалить обои этого источника»**. Удаляются все его копии из библиотеки, включая понравившиеся. В окне подтверждения **«Нет» доступно сразу**, а **«Да, удалить» — через 3 секунды**.
 - **Исключённые теги:** после сохранения настроек совпадающие обои автоматически удаляются **через минуту**, включая понравившиеся. Совпадение проверяется по полному имени тега, без учёта регистра. Если убрать тег из исключений и сохранить настройки до очистки, удаление отменится. Пауза приложения приостанавливает автоматическую очистку; занятая программа выполнит её позднее.
 - **Очистить по тегам сразу:** в «Настройки → Интересы и контент» доступна кнопка **«Удалить обои с исключёнными тегами»** с таким же подтверждением.
@@ -71,6 +73,8 @@
 **Удаление копий необратимо.** Личные файлы в папках-источниках сохраняются. Оценки и отпечатки остаются для защиты от повторного скачивания; очищенные изображения исчезают из галереи и истории возврата. Уже установленные обои сохраняются на рабочем столе до следующей смены. При обновлении с прежней версии минутная отсрочка применяется и к уже сохранённым исключённым тегам.
 
 ### 👍 Как работают оценки
+
+В списках интересов и исключений допускается **до 1000 тегов в каждом**, длина одного тега — до 80 символов. Под полями есть **поиск по части названия**, счётчики и удаление отдельных тегов. Большие списки отображаются страницами по 30 тегов. Поиск ничего не меняет; редактирование и удаление применяются после **«Сохранить»**. Тег с запятой в текстовом поле указывается в кавычках: `"artist, sample"`.
 
 | Действие | Результат |
 | --- | --- |
@@ -82,7 +86,7 @@
 
 Дизлайк применяется через **5 секунд**; за это время действие можно отменить. **«Отложить» применяется сразу**, без таймера. Если исключить текущие обои, приложение подберёт замену из доступной библиотеки. Исходные файлы в подключённой личной папке сохраняются.
 
-Кнопка рядом с левой стрелкой в просмотре возвращает к **трём последним оценённым обоям**; доступны также **Q / Й** и **↑**. Файлы старых дизлайков и исключений освобождаются, а оценки и отпечатки сохраняются для защиты от повторной загрузки. Три последних оценки и текущие обои временно сохраняют файлы для возврата.
+Кнопка рядом с левой стрелкой в просмотре возвращает к **трём последним оценённым обоям**; доступны также **Q / Й** и **↑**. Файлы старых дизлайков и исключений освобождаются, а оценки и отпечатки сохраняются для защиты от повторной загрузки. Файлы дизлайков и исключений сохраняются до 5 минут для возврата; текущие обои защищены до смены. Новые правила очистки по показам применяются только к неоценённым, понравившимся, нейтральным и отложенным.
 
 ### 🧠 Как включить ИИ и выбрать режим
 
@@ -176,7 +180,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.16/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.16). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.17/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.17). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -210,6 +214,8 @@ Disabling a source hides its unreviewed images. Removing it clears those library
 
 ### 🧹 Library cleanup
 
+- **By display count:** Settings → Automation lets you choose folders independently and set each threshold from **1 to 1000 displays**. New rules are off by default. A display counts after 30 seconds of visible desktop time and contributes to the wallpaper’s shared counter across monitors; showing the same image on several screens at once counts once. Current wallpapers are protected until replaced on every monitor. A one-minute grace period then allows cancellation by disabling the rule and saving. Existing display counts are included. Counts appear in each card’s more-actions menu.
+
 - **A disabled source’s wallpapers:** open Sources, disable the source and select **Delete this source’s wallpapers**. All its library copies are deleted, including liked wallpapers. **No is available immediately**; **Yes, delete becomes available after 3 seconds**.
 - **Excluded tags:** after saving settings, matching wallpapers are automatically deleted **after one minute**, including liked wallpapers. Matching uses the whole tag name, ignoring letter case. Remove the exclusion and save before cleanup to cancel it. Pausing the app pauses automatic cleanup; busy tasks may delay it.
 - **Clean up tags now:** Settings → Interests and content provides **Delete wallpapers with excluded tags**, with the same confirmation.
@@ -217,6 +223,8 @@ Disabling a source hides its unreviewed images. Removing it clears those library
 **Deleting library copies is irreversible.** Original files in personal source folders are preserved. Ratings and fingerprints remain to prevent repeated downloads; cleared images disappear from the gallery and recent review history. The current desktop remains until the next wallpaper change. When upgrading, the one-minute grace period also applies to previously saved excluded tags.
 
 ### 👍 Ratings
+
+Interests and exclusions support **up to 1000 tags each**, with up to 80 characters per tag. Each field provides **partial-name search**, counters and individual tag removal. Large lists are displayed in pages of 30. Search does not alter the list; edits and removals take effect after **Save**. Quote a tag containing a comma: `"artist, sample"`.
 
 | Action | Effect |
 | --- | --- |
@@ -228,7 +236,7 @@ Disabling a source hides its unreviewed images. Removing it clears those library
 
 Dislike has a **5-second undo period**. **Later applies immediately**, without a timer. Excluding the current wallpaper selects a replacement from the available library. Files in connected personal source folders are preserved.
 
-The button beside the previous arrow revisits **up to three recently rated images**; **Q** and **↑** provide the same action. Older disliked and excluded image files are cleared while ratings and fingerprints prevent repeat downloads. The latest three reviews and current wallpapers temporarily retain cached files.
+The button beside the previous arrow revisits **up to three recently rated images**; **Q** and **↑** provide the same action. Older disliked and excluded image files are cleared while ratings and fingerprints prevent repeat downloads. Disliked and excluded copies remain for up to five minutes to allow returning; current wallpapers are protected until replaced. Display-count rules apply only to Unreviewed, Liked, Neutral and Later.
 
 ### 🧠 Optional AI
 

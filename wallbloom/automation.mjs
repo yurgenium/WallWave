@@ -2,7 +2,7 @@ import {allowed,score} from './core.mjs';
 
 export function visibleSettings(db){return db.workMode?{...db.settings,purity:'100',preset:'safe'}:db.settings;}
 export function eligible(db,settings=visibleSettings(db)){
- return db.items.filter(x=>x.downloaded&&(x.vote||!db.providers||db.providers.some(p=>p.id===x.provider&&p.enabled))&&allowed(x,settings)&&!['ban','dislike','deferred'].includes(x.vote));
+ return db.items.filter(x=>{const rule=db.settings.cleanupAfterShows?.[x.vote||'pending'];return x.downloaded&&(!rule?.enabled||(x.showCount||0)<rule.shows)&&(x.vote||!db.providers||db.providers.some(p=>p.id===x.provider&&p.enabled))&&allowed(x,settings)&&!['ban','dislike','deferred'].includes(x.vote);});
 }
 export function chooseNext(db,settings=visibleSettings(db),current=db.current,random=Math.random){
  const items=eligible(db,settings).filter(x=>x.id!==current);
