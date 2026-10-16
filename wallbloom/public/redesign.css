@@ -58,3 +58,4 @@
 .cleanup-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .cleanup-error { color: #ffb5b5; }
 .tag-cleanup { margin-top: 16px; }
+input.shortcut-recording { outline: 2px solid #8ef0cd; outline-offset: 2px; }

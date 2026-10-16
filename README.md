@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.15/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.15 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.16/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.16 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.15/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.15) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.16/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.16) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -157,6 +157,8 @@
 
 В **«Настройки → Горячие клавиши»** выбирается раскладка: **Enter и стрелки** либо **Пробел/Tab и A/D**.
 
+Для глобального сочетания выберите поле нужного действия, нажмите, например, **Alt+1**, затем **«Сохранить»**. Результат регистрации появится под полем. Backspace/Delete очищает поле, Escape отменяет ввод. Во время редактирования глобальные сочетания приложения временно отключены.
+
 - **1–5** — нравится, не нравится, исключить, нейтрально, отложить.
 - **F** — кадрирование; **R** — сброс оценки.
 - **Backspace** — отмена дизлайка, пока идёт отсчёт; **Q / Й** или **↑** — возврат к трём последним оценённым обоям.
@@ -174,7 +176,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.15/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.15). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.16/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.16). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -282,6 +284,8 @@ Closing the window keeps WallWave running in the tray. Updates are installed man
 - **Reporting an issue:** include the app version, source and Activity message. API keys and a personal library are not needed.
 
 Preview controls can use **Enter and arrows** or **Space/Tab and A/D**, selected in Settings → Shortcuts. **1–5** apply ratings, **F** opens framing, **R** resets a rating, **Backspace** cancels a pending Dislike, and **Q** or **↑** revisits up to three recently rated wallpapers. **F1 / F2 / F3** toggle SFW / Sketchy / NSFW.
+
+To assign a global shortcut, select the action’s field, press a combination such as **Alt+1**, then select **Save**. Registration status appears below the field. Backspace/Delete clears the field; Escape cancels the edit. The app’s global shortcuts are temporarily disabled while recording.
 
 </details>
 

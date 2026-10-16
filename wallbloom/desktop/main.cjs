@@ -1,13 +1,15 @@
-const {app,BrowserWindow,Tray,Menu,nativeImage,shell,dialog,globalShortcut,powerMonitor}=require('electron');
+const {app,BrowserWindow,Tray,Menu,nativeImage,shell,dialog,globalShortcut,powerMonitor,ipcMain}=require('electron');
 const {fork}=require('node:child_process');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {labels,status}=require('./status.cjs');
 const {libraryDirectory}=require('./storage.cjs');
-let shortcutKey='',contextKey='',locked=false,shortcutReport={};
+let shortcutKey='',contextKey='',locked=false,shortcutReport={},shortcutCapture=false;
 const extra=(ru,en)=>language()==='ru'?ru:en;
-function bindShortcuts(){const key=JSON.stringify(snapshot?.settings.shortcuts||{});if(key===shortcutKey)return;shortcutKey=key;globalShortcut.unregisterAll();shortcutReport={};const actions={next:()=>post('next',{}),like:()=>snapshot.current&&post('vote',{id:snapshot.current,vote:'like'}),ban:()=>snapshot.current&&post('vote',{id:snapshot.current,vote:'ban'}),work:()=>post('work',{enabled:!snapshot.workMode})};for(const [name,accelerator]of Object.entries(snapshot.settings.shortcuts||{})){if(!accelerator){shortcutReport[name]='shortcutDisabled';continue;}try{shortcutReport[name]=globalShortcut.register(accelerator,actions[name])?'shortcutActive':'shortcutConflict';}catch{shortcutReport[name]='shortcutInvalid';}}}
+function setShortcutCapture(active){if(shortcutCapture===active)return;shortcutCapture=active;shortcutKey='';if(active)globalShortcut.unregisterAll();else if(!quitting&&snapshot)bindShortcuts();}
+function bindShortcuts(){if(shortcutCapture)return;const key=JSON.stringify(snapshot?.settings.shortcuts||{});if(key===shortcutKey)return;shortcutKey=key;globalShortcut.unregisterAll();shortcutReport={};const actions={next:()=>post('next',{}),like:()=>snapshot.current&&post('vote',{id:snapshot.current,vote:'like'}),ban:()=>snapshot.current&&post('vote',{id:snapshot.current,vote:'ban'}),work:()=>post('work',{enabled:!snapshot.workMode})};for(const [name,accelerator]of Object.entries(snapshot.settings.shortcuts||{})){if(!accelerator){shortcutReport[name]='shortcutDisabled';continue;}try{shortcutReport[name]=globalShortcut.register(accelerator,actions[name])?'shortcutActive':'shortcutConflict';}catch{shortcutReport[name]='shortcutInvalid';}}}
 async function sendContext(trigger){if(!base||!snapshot)return;const value={locked,shortcuts:shortcutReport,...trigger&&{trigger}};const key=JSON.stringify(value);if(!trigger&&key===contextKey)return;const r=await fetch(base+'/api/desktop-context',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':snapshot.token},body:JSON.stringify(value)});if(r.ok)contextKey=key;}
+ipcMain.on('wallwave:shortcut-capture',(event,active)=>{if(typeof active!=='boolean'||!window||event.sender!==window.webContents||event.senderFrame?.url!==base+'/'||active&&!window.isFocused())return;setShortcutCapture(active);});
 app.setName('WallWave');app.setAppUserModelId('app.wallbloom.desktop');
 const testMode=process.env.WALLBLOOM_DESKTOP_TEST==='1';
 app.setPath('userData',testMode&&process.env.WALLBLOOM_DESKTOP_TEST_HOME||path.join(app.getPath('appData'),'Wallbloom'));
@@ -26,9 +28,10 @@ async function migrate(){await fs.mkdir(path.dirname(data),{recursive:true});if(
 }
 async function openExternal(url){try{const u=new URL(url);if(u.protocol==='https:'&&!u.username&&!u.password)await shell.openExternal(u.href);}catch{}}
 function openWindow(){if(quitting||!base)return;if(window&&!window.isDestroyed()){if(window.isMinimized())window.restore();window.show();window.focus();return;}
- window=new BrowserWindow({width:1280,height:860,minWidth:720,minHeight:560,show:false,title:'WallWave',backgroundColor:'#101318',icon:path.join(__dirname,'icons/app.ico'),autoHideMenuBar:true,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
+ window=new BrowserWindow({width:1280,height:860,minWidth:720,minHeight:560,show:false,title:'WallWave',backgroundColor:'#101318',icon:path.join(__dirname,'icons/app.ico'),autoHideMenuBar:true,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
  window.webContents.setWindowOpenHandler(({url})=>{openExternal(url);return {action:'deny'};});window.webContents.on('will-navigate',(event,url)=>{if(new URL(url).origin!==base){event.preventDefault();openExternal(url);}});window.webContents.on('will-attach-webview',event=>event.preventDefault());window.webContents.session.setPermissionRequestHandler((webContents,permission,callback)=>callback(false));
- window.once('ready-to-show',()=>{window?.show();});window.on('closed',()=>{window=null;if(!quitting&&!closedNotice){closedNotice=true;tray.displayBalloon({title:l().closeTitle,content:l().closeText,iconType:'info'});}});
+ window.on('blur',()=>setShortcutCapture(false));window.webContents.on('render-process-gone',()=>setShortcutCapture(false));
+ window.once('ready-to-show',()=>{window?.show();});window.on('closed',()=>{setShortcutCapture(false);window=null;if(!quitting&&!closedNotice){closedNotice=true;tray.displayBalloon({title:l().closeTitle,content:l().closeText,iconType:'info'});}});
  window.on('session-end',()=>{service?.send({type:'shutdown'});});window.loadURL(base).catch(()=>{failure=true;updateTray();});
 }
 function updateTray(){if(!tray)return;const phase=failure?'error':status(snapshot),texts=l(),image=phase==='ready'?'working':['working','paused','error'].includes(phase)?phase:'waiting';tray.setImage(nativeImage.createFromPath(path.join(__dirname,'icons',image+'.png')));tray.setToolTip('WallWave — '+(quitting?texts.closing:texts[phase]));window?.setTitle('WallWave — '+texts[phase]);
