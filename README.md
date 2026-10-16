@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.14/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.14 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.15/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.15 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.14/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.14) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.15/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.15) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -61,6 +61,14 @@
 Теги с запятой записываются в кавычках: `"название, с запятой", nature`. Нажатие на тег в карточке добавляет его целиком; правое нажатие управляет исключением.
 
 Отключение источника скрывает его неоценённые изображения. Удаление источника освобождает такие копии из библиотеки; оценённые изображения и личные исходные файлы сохраняются.
+
+### 🧹 Очистка библиотеки
+
+- **Обои отключённого источника:** откройте «Источники», отключите нужный источник и нажмите **«Удалить обои этого источника»**. Удаляются все его копии из библиотеки, включая понравившиеся. В окне подтверждения **«Нет» доступно сразу**, а **«Да, удалить» — через 3 секунды**.
+- **Исключённые теги:** после сохранения настроек совпадающие обои автоматически удаляются **через минуту**, включая понравившиеся. Совпадение проверяется по полному имени тега, без учёта регистра. Если убрать тег из исключений и сохранить настройки до очистки, удаление отменится. Пауза приложения приостанавливает автоматическую очистку; занятая программа выполнит её позднее.
+- **Очистить по тегам сразу:** в «Настройки → Интересы и контент» доступна кнопка **«Удалить обои с исключёнными тегами»** с таким же подтверждением.
+
+**Удаление копий необратимо.** Личные файлы в папках-источниках сохраняются. Оценки и отпечатки остаются для защиты от повторного скачивания; очищенные изображения исчезают из галереи и истории возврата. Уже установленные обои сохраняются на рабочем столе до следующей смены. При обновлении с прежней версии минутная отсрочка применяется и к уже сохранённым исключённым тегам.
 
 ### 👍 Как работают оценки
 
@@ -166,7 +174,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.14/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.14). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.15/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.15). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -197,6 +205,14 @@ Cards show the **image source**. The more-actions menu contains details and the 
 Quote tag names that contain commas: `"tag, with comma", nature`. Clicking a card tag adds its whole name; right-clicking controls exclusion.
 
 Disabling a source hides its unreviewed images. Removing it clears those library copies; rated images and personal source files are preserved.
+
+### 🧹 Library cleanup
+
+- **A disabled source’s wallpapers:** open Sources, disable the source and select **Delete this source’s wallpapers**. All its library copies are deleted, including liked wallpapers. **No is available immediately**; **Yes, delete becomes available after 3 seconds**.
+- **Excluded tags:** after saving settings, matching wallpapers are automatically deleted **after one minute**, including liked wallpapers. Matching uses the whole tag name, ignoring letter case. Remove the exclusion and save before cleanup to cancel it. Pausing the app pauses automatic cleanup; busy tasks may delay it.
+- **Clean up tags now:** Settings → Interests and content provides **Delete wallpapers with excluded tags**, with the same confirmation.
+
+**Deleting library copies is irreversible.** Original files in personal source folders are preserved. Ratings and fingerprints remain to prevent repeated downloads; cleared images disappear from the gallery and recent review history. The current desktop remains until the next wallpaper change. When upgrading, the one-minute grace period also applies to previously saved excluded tags.
 
 ### 👍 Ratings
 

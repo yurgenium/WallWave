@@ -18,3 +18,45 @@ export function rememberReview(db,id,time=Date.now()){
  const at=Math.max(Date.now()-300000,Math.min(Date.now(),Number(time)||Date.now()));
  db.recentReviews=[{id,time:at},...(db.recentReviews||[]).filter(x=>x.id!==id)].sort((a,b)=>b.time-a.time).slice(0,3);
 }
+
+export const tagCleanupDelay=60000;
+const tagKey=tags=>JSON.stringify([...new Set((tags||[]).map(t=>t.trim().toLowerCase()).filter(Boolean))].sort());
+export function matchesExcludedTags(item,tags){const excluded=new Set(JSON.parse(tagKey(tags)));return (item.tags||[]).some(t=>excluded.has(t.trim().toLowerCase()));}
+export function cleanupCandidates(db,scope){
+ if(scope.kind==='provider'){
+  const provider=db.providers.find(p=>p.id===scope.providerId);
+  if(!provider||provider.enabled)throw Error('cleanupSourceEnabled');
+ }else if(scope.kind!=='tags')throw Error('invalidRequest');
+ return db.items.filter(x=>(!x.cleanupRemoved||x.downloaded||x.hasOriginal)&&(scope.kind==='provider'?x.provider===scope.providerId:matchesExcludedTags(x,db.settings.excludedTags)));
+}
+export function syncTagCleanup(db,now=Date.now()){
+ const key=tagKey(db.settings.excludedTags),count=cleanupCandidates(db,{kind:'tags'}).length;
+ const dueAt=count?(db.tagCleanup?.key===key&&db.tagCleanup.dueAt||now+tagCleanupDelay):null;
+ db.tagCleanup={key,dueAt};return {count,dueAt};
+}
+export async function purgeCopies(dir,db,items){
+ let removed=0,bytes=0;const ids=new Set();
+ for(const item of items){if(item.cleanupRemoved&&!item.downloaded&&!item.hasOriginal)continue;const size=(item.bytes||0)+(item.originalBytes||0);await clearItem(dir,item);item.cleanupRemoved=true;ids.add(item.id);removed++;bytes+=size;}
+ db.recentReviews=(db.recentReviews||[]).filter(x=>!ids.has(x.id));
+ return {removed,bytes};
+}
+
+// Confirmation tickets are single use, expire after five minutes, and freeze the
+// displayed scope so a newly downloaded image cannot be deleted without consent.
+export class CleanupConfirmations{
+ constructor(){this.tickets=new Map();}
+ prepare(db,scope,id,now=Date.now()){
+  for(const [key,value] of this.tickets)if(now-value.created>300000)this.tickets.delete(key);
+  if(this.tickets.size>=100)this.tickets.delete(this.tickets.keys().next().value);
+  const items=cleanupCandidates(db,scope);this.tickets.set(id,{scope:{...scope},ids:items.map(x=>x.id),created:now,tagKey:tagKey(db.settings.excludedTags)});
+  return {ticket:id,count:items.length,waitMs:3000};
+ }
+ consume(db,id,now=Date.now()){
+  const ticket=this.tickets.get(id);
+  if(!ticket||now-ticket.created>300000)throw Error('cleanupExpired');
+  if(now-ticket.created<3000)throw Error('cleanupWait');
+  if(ticket.scope.kind==='tags'&&ticket.tagKey!==tagKey(db.settings.excludedTags))throw Error('cleanupExpired');
+  const items=cleanupCandidates(db,ticket.scope),ids=new Set(ticket.ids);
+  this.tickets.delete(id);return items.filter(x=>ids.has(x.id));
+ }
+}
