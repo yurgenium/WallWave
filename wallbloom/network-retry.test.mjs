@@ -62,3 +62,10 @@ test('a bounded batch transfer times out once so another wallpaper can replace i
  await assert.rejects(fetchBytes('https://example.com/slow',{timeoutMs:20,attempts:1}),e=>['TimeoutError','AbortError'].includes(e.name));assert.equal(calls,1);
 });
 test('metadata requests stop after the requested prefix even if the host ignores Range',async t=>{t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);let range; t.mock.method(https,'get',(_,options,resolve)=>{range=options.headers.Range;const req=new EventEmitter();req.setTimeout=()=>{};queueMicrotask(()=>{const res=Readable.from([Buffer.alloc(100),Buffer.alloc(100)]);res.statusCode=200;res.headers={'content-length':'2000000'};resolve(res);});return req;});assert.equal((await fetchBytes('https://example.com/image',{prefix:128,limit:128})).length,128);assert.equal(range,'bytes=0-127');});
+
+test('an aborted response stream preserves timeout instead of becoming a connection reset',async t=>{
+ t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);let calls=0;
+ const keepAlive=setTimeout(()=>{},2000);t.after(()=>clearTimeout(keepAlive));
+ t.mock.method(https,'get',(_,options,resolve)=>{calls++;const req=new EventEmitter();req.setTimeout=()=>{};const res=new Readable({read(){}});res.statusCode=200;res.headers={'content-length':'100'};options.signal.addEventListener('abort',()=>res.destroy(Object.assign(Error('aborted stream'),{code:'ECONNRESET'})),{once:true});queueMicrotask(()=>resolve(res));return req;});
+ await assert.rejects(fetchBytes('https://example.com/slow-body',{timeoutMs:20,attempts:1}),{name:'TimeoutError'});assert.equal(calls,1);
+});

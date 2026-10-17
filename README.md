@@ -136,6 +136,8 @@
 
 Реально подходящих новых обоев может оказаться меньше порции. Приложение показывает частичный результат и причину остановки: закончились варианты, сработал фильтр, достигнут предел проверки или возникла ошибка. Подробности находятся в **«Журнале»**.
 
+**Ограничение времени:** новые поиски и загрузки не начинаются после восьми минут подбора. Уже начатые передачи завершаются в пределах своего тайм-аута; сохранённые файлы остаются в библиотеке. При медленной сети результат может быть частичным.
+
 **Две шкалы подбора:** «Подготовлено» считает обои, прошедшие отбор, включая уже скачанные и ожидающие загрузки. «Скачано» считает только сохранённые файлы. Например, **9 из 24 подготовлено, 5 из 24 скачано** означает, что ещё 4 изображения загружаются или стоят в очереди. Просмотренные и отклонённые кандидаты в эти числа не входят; шкалы не переключаются на байты отдельного файла.
 
 Подбор держит небольшую очередь и передаёт **до двух оригиналов одновременно**. Проверка миниатюры предшествует запросу полных данных; сведения Wallhaven кешируются на сутки. При равной оценке раньше выбираются меньшие файлы. Медленные файлы откладываются, а ошибки одной площадки не мешают остальным. Запросы API идут с интервалами и учитывают ограничения источника. **«Продолжить подбор»** запускает такую же ограниченную партию, вместо скачивания всех когда-либо найденных кандидатов.
@@ -311,6 +313,8 @@ Rejected originals are not downloaded. Without an available preview, Cautious al
 For example, a batch of **12** with **28 out of 30** unreviewed images allows at most **2** new downloads. Rate some images or adjust the limit to make room.
 
 A source may have fewer suitable new images than requested. Partial downloads show the count and reason; the **Activity** log provides details.
+
+**Time limit:** no new searches or transfers start after eight minutes. Active transfers finish within their own timeout and saved files remain in the library. Slow networks can result in a partial batch.
 
 **Two selection bars:** Prepared counts wallpapers that passed selection, including saved and queued files. Downloaded counts only saved files. For example, **9 of 24 prepared and 5 of 24 downloaded** means four more wallpapers are queued or downloading. Rejected and merely inspected candidates are excluded; the bars do not switch to an individual file’s byte count.
 

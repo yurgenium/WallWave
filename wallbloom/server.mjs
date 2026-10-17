@@ -80,7 +80,8 @@ async function refresh(signal,{cachedOnly=false}={}){
  let downloaded=0,rejected=0,deferred=0,stopReason='',failure='',lastProgress=Date.now();
  const sourceFailures=new Map();
  job.target=target;job.requestedTarget=db.settings.batch;job.poolLimit=db.settings.pendingTarget;job.downloaded=0;job.ready=0;job.active=0;job.phase='searching';
- const room=()=>{if(!stopReason&&!job.ready&&Date.now()-lastProgress>120000)stopReason='searchNoProgress';return downloaded<target&&pendingCapacity(db)>0&&!stopReason;};
+ const timedOut=()=>Date.now()-job.started>=8*60000;
+ const room=()=>{if(!stopReason&&timedOut())stopReason='searchTimeLimit';if(!stopReason&&!job.ready&&Date.now()-lastProgress>120000)stopReason='searchNoProgress';return downloaded<target&&pendingCapacity(db)>0&&!stopReason;};
  const noteFailure=x=>{
   if(x.aiScreening?.rejected)rejected++;
   else if(['aiDeferred','aiPreviewUnavailable'].includes(x.error)){deferred++;if(aiSession?.closed||['lowMemory','aiPaused'].includes(x.aiDeferredReason))stopReason='aiDeferred';}
@@ -93,6 +94,7 @@ async function refresh(signal,{cachedOnly=false}={}){
   if(['rateLimited','sourceAuthFailed','sourceQuotaReached'].includes(x.error)){blocked.add(x.provider);providerStatus[x.provider]={code:x.error,time:Date.now(),...x.sourceRetryAt&&{retryAt:x.sourceRetryAt}};}
  };
  const queue=new DownloadQueue({signal,changed:({ready,active})=>{job.ready=ready;job.active=active;},run:async(x,transferSignal)=>{
+  if(timedOut()){stopReason='searchTimeLimit';return;}
   if(stopReason==='diskLimit'||!db.providers.some(p=>p.id===x.provider&&available(p))||pendingCapacity(db)===0)return;
   if(await download(x,transferSignal,false,true)){downloaded++;job.downloaded=downloaded;lastProgress=Date.now();sourceFailures.delete(x.provider);}
   else noteFailure(x);
@@ -131,6 +133,7 @@ async function refresh(signal,{cachedOnly=false}={}){
   if(!await queue.room(remaining))break;
   job.phase='searching';const pages=[],candidates=[],queued=new Set();
   for(const s of sources){
+   if(!room())break;
    if(!db.providers.some(p=>p.id===s.p.id&&available(p)))s.done=true;
    if(s.done)continue;
    signal.throwIfAborted();

@@ -166,3 +166,9 @@ test('repeated slow transfers stop retrying an unhealthy source instead of scann
  const s=await f.refresh();assert.equal(s.refreshDownloaded,0);assert.equal(s.providerStatus.wallhaven.code,'sourceTemporarilyUnavailable');assert(s.providerStatus.wallhaven.retryAt>Date.now());
  const starts=(await fs.readFile(f.file+'.starts','utf8')).trim().split('\n').map(JSON.parse).filter(x=>x.original);assert.deepEqual(starts.map(x=>x.id),['slow1','slow2','slow3']);
 });
+
+test('the overall time limit stops queued originals and keeps completed files and counts',async t=>{
+ const f=await fixture(t,{pages:{1:['good1','good2','good3','good4'].map(picture)},imageAliases:{good1:'red',good2:'green',good3:'yellow',good4:'blue'},downloadDelay:200,previewDelay:0,advanceTimeAfterOriginal:8*60000+1},{settings:{batch:4}});
+ const s=await f.refresh();assert.equal(s.refreshDownloaded,2);assert.equal(s.refreshTarget,4);assert.equal(s.refreshOutcome,'poolPartial');assert.equal(s.refreshReason,'searchTimeLimit');assert.equal(s.items.filter(x=>x.downloaded).length,2);
+ const starts=(await fs.readFile(f.file+'.starts','utf8')).trim().split('\n').map(JSON.parse).filter(x=>x.original);assert.equal(starts.length,2);assert.deepEqual(await f.searches(),[1]);
+});

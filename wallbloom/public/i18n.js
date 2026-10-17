@@ -173,6 +173,8 @@ Object.assign(strings.en,{"refreshJob":"Finding and downloading wallpapers","pre
 
 Object.assign(strings.ru,{searchNoProgress:'Две минуты без новых подходящих вариантов. Подбор можно продолжить позже.'});
 Object.assign(strings.en,{searchNoProgress:'No new suitable wallpapers for two minutes. Selection can be continued later.'});
+Object.assign(strings.ru,{searchTimeLimit:'Достигнут предел времени подбора — 8 минут. Скачанные обои сохранены; подбор можно продолжить позже.'});
+Object.assign(strings.en,{searchTimeLimit:'The 8-minute selection time limit was reached. Downloaded wallpapers are saved; selection can be continued later.'});
 
 Object.assign(strings.ru,{continueSelection:'Продолжить подбор',reserveGoalLimit:'Свободных мест в запасе: {count}. Лимит: {target}.'});
 Object.assign(strings.en,{continueSelection:'Continue selection',reserveGoalLimit:'Reserve slots available: {count}. Limit: {target}.'});
