@@ -167,3 +167,21 @@ Object.assign(strings.en,{
 
 Object.assign(strings.ru,{sourceApiKey:'API-ключ',sourceAccessSaved:'Данные доступа сохранены',sourceCredit:'Авторство'});
 Object.assign(strings.en,{sourceApiKey:'API key',sourceAccessSaved:'Access details saved',sourceCredit:'Credit'});
+
+Object.assign(strings.ru,{"refreshJob":"Подбор и загрузка обоев","preparedCount":"Подготовлено: {count} из {target}","downloadedCount":"Скачано: {count} из {target}","preparedCountHelp":"Обои, прошедшие отбор: уже скачанные, загружающиеся и ожидающие загрузки. Отклонённые изображения сюда не входят.","downloadQueueInfo":"Загружаются: {active} · В очереди: {waiting}","searchingPhase":"Поиск подходящих обоев…","screeningPhase":"Проверка соответствия предпочтениям…","downloadSlow":"Медленный ответ источника. Загрузка этого файла отложена, подбор ищет другие варианты."});
+Object.assign(strings.en,{"refreshJob":"Finding and downloading wallpapers","preparedCount":"Prepared: {count} of {target}","downloadedCount":"Downloaded: {count} of {target}","preparedCountHelp":"Wallpapers that passed selection: saved, downloading and queued. Rejected images are not included.","downloadQueueInfo":"Downloading: {active} · Queued: {waiting}","searchingPhase":"Finding suitable wallpapers…","screeningPhase":"Checking preference match…","downloadSlow":"The source is responding slowly. This file is deferred while selection continues."});
+
+Object.assign(strings.ru,{searchNoProgress:'Две минуты без новых подходящих вариантов. Подбор можно продолжить позже.'});
+Object.assign(strings.en,{searchNoProgress:'No new suitable wallpapers for two minutes. Selection can be continued later.'});
+
+Object.assign(strings.ru,{continueSelection:'Продолжить подбор',reserveGoalLimit:'Свободных мест в запасе: {count}. Лимит: {target}.'});
+Object.assign(strings.en,{continueSelection:'Continue selection',reserveGoalLimit:'Reserve slots available: {count}. Limit: {target}.'});
+
+Object.assign(strings.ru,{sourceQuotaReached:'Источник сообщил о лимите скачиваний. Подбор продолжится на других подключённых площадках.'});
+Object.assign(strings.en,{sourceQuotaReached:'The source reported a download limit. Selection continues on other connected sites.'});
+
+Object.assign(strings.ru,{sourceTemporarilyUnavailable:'Источник временно недоступен. Подбор использует остальные подключённые площадки.'});
+Object.assign(strings.en,{sourceTemporarilyUnavailable:'The source is temporarily unavailable. Selection uses other connected sites.'});
+
+Object.assign(strings.ru,{poolUpdated:'Партия скачана',poolPartial:'Скачана часть партии',reserveBatchLimited:'Размер партии ограничен свободными местами в запасе на момент запуска.',reserveGoalLimit:'При запуске было свободно мест: {count}. Лимит: {target}.',sourceQuotaReached:'Источник сообщил о лимите скачиваний. Повторная попытка будет доступна позже.',sourceTemporarilyUnavailable:'Источник временно недоступен. Повторная попытка будет доступна позже.',downloadSlow:'Медленный ответ источника. Загрузка этого файла отложена.'});
+Object.assign(strings.en,{poolUpdated:'Batch complete',poolPartial:'Batch partially downloaded',reserveBatchLimited:'Batch size was limited by free reserve slots when selection started.',reserveGoalLimit:'Free reserve slots at start: {count}. Limit: {target}.',sourceQuotaReached:'The source reported a download limit. Another attempt will be available later.',sourceTemporarilyUnavailable:'The source is temporarily unavailable. Another attempt will be available later.',downloadSlow:'The source responded slowly. This file has been deferred.'});

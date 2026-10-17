@@ -9,6 +9,11 @@ import {downloadImage,initLibrary,imagePath,removeCached} from './library.mjs';
 import {exportLibrary,restoreLibrary} from './archive.mjs';
 const item=(id,more={})=>({id,provider:'local',title:id,tags:['nature'],rating:'safe',downloaded:true,vote:null,...more});
 const database=items=>({settings:validate(defaults),providers:[{id:'local',name:'Local',enabled:true,type:'local',folder:path.resolve('.')}],items,current:null,lastRefresh:0,lastRotation:0,monitorCurrent:{}});
+test('equally ranked candidates prefer smaller known originals without demoting stronger taste matches',()=>{
+ const db=database([]);db.settings.diversity=0;
+ const candidates=[{id:'large',tags:[],size:2000000},{id:'unknown',tags:[],size:0},{id:'small',tags:[],size:500000},{id:'best',tags:['nature'],size:10000000}];
+ assert.deepEqual(rankCandidates(candidates,db,()=>1).map(x=>x.id),['best','small','large','unknown']);
+});
 test('persistent rotation cohorts prevent repeats and respect bans and categories',()=>{const db=database([item('old',{rotationCount:5}),item('next'),item('banned',{vote:'ban'}),item('adult',{rating:'adult'})]);assert.equal(chooseNext(db).id,'next');db.items[1].rotationCount=6;assert.equal(chooseNext(db).id,'old');db.current='old';assert.equal(chooseNext(db).id,'next');assert.equal(chooseNext(JSON.parse(JSON.stringify(db))).id,'next');});
 test('show requires 30 seconds visible, excludes cards, lock and fullscreen; same wallpaper on two monitors counts once',()=>{const db=database([item('x')]);db.exposures={a:{id:'x',since:1000},b:{id:'x',since:1000}};assert.equal(confirmShows(db,{code:'fullscreen'},31000),false);assert.equal(confirmShows(db,{code:'active'},50000),false);assert.equal(confirmShows(db,{code:'active'},62000),true);assert.equal(db.items[0].showCount,1);confirmShows(db,{code:'active'},90000);assert.equal(db.items[0].showCount,1);});
 test('unreviewed wallpapers are never automatically retired',()=>{const db=database([item('old',{showCount:3}),item('current',{showCount:10}),item('liked',{vote:'like',showCount:10}),item('banned',{vote:'ban',showCount:10})]);db.monitorCurrent={a:'current'};assert.deepEqual(staleItems(db),[]);db.settings.retireAfter=10;assert.equal(staleItems(db).length,0);});

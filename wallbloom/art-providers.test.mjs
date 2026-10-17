@@ -22,7 +22,7 @@ test('Pixabay requests remain manual and cached for 24 hours across restarts wit
 
 test('DeviantArt client access renews, browses tags and resolves only permitted original downloads',async()=>{
  let now=100000,tokens=0;const queries=[],key=JSON.stringify({client_id:'123',client_secret:'PRIVATE_TEST_CLIENT_SECRET'}),client=new ArtSources({now:()=>now,request:async(url,signal,options={})=>{
-  const u=new URL(url);if(u.pathname==='/oauth2/token'){tokens++;assert.equal(options.method,'POST');assert.equal(u.search,'');const form=new URLSearchParams(options.body);assert.equal(form.get('client_id'),'123');assert.equal(form.get('grant_type'),'client_credentials');return {access_token:'token-'+tokens,expires_in:3600};}
+  const u=new URL(url);if(u.pathname==='/oauth2/token'){tokens++;assert.equal(options.method,'POST');assert.equal(u.search,'');const form=new URLSearchParams(options.body);assert.equal(form.get('client_id'),'123');assert.equal(form.get('grant_type'),'client_credentials');assert.equal(form.has('scope'),false);return {access_token:'token-'+tokens,expires_in:3600};}
   assert.equal(options.headers.Authorization,'Bearer token-'+tokens);assert.equal(u.searchParams.has('access_token'),false);
   if(u.pathname.endsWith('/metadata'))return {metadata:[{deviationid:'abc',tags:[{tag_name:'landscape'},{tag_name:'forest'}]}]};
   if(u.pathname.includes('/download/'))return {src:'https://images-wixmp.com/original.jpg',filename:'original.jpg',width:2560,height:1440,filesize:4000};

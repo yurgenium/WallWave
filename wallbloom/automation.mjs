@@ -18,7 +18,7 @@ export function chooseNext(db,settings=visibleSettings(db),current=db.current,ra
 }
 export function pendingCapacity(db){return db.settings.pendingTarget>0?Math.max(0,db.settings.pendingTarget-db.items.filter(x=>x.downloaded&&!x.vote&&(!db.providers||db.providers.some(p=>p.id===x.provider&&p.enabled))).length):Infinity;}
 export function rankCandidates(items,db,random=Math.random){
- const ranked=items.map(x=>({x,rank:score(x,db.items,db.settings)})).sort((a,b)=>b.rank-a.rank);
+ const ranked=items.map(x=>({x,rank:score(x,db.items,db.settings)})).sort((a,b)=>b.rank-a.rank||(a.x.size>0?a.x.size:Infinity)-(b.x.size>0?b.x.size:Infinity));
  const result=[];while(ranked.length){const i=random()<db.settings.diversity/100?Math.floor(random()*ranked.length):0;result.push(ranked.splice(i,1)[0].x);}return result;
 }
 export function staleItems(){return [];}

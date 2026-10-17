@@ -13,3 +13,9 @@ test('OAuth POST uses a body; authenticated redirects cannot forward credentials
  t.mock.method(https,'get',(url,options,resolve)=>{connections++;const req=new EventEmitter();req.setTimeout=()=>{};queueMicrotask(()=>{const res=Readable.from([]);res.statusCode=302;res.headers={location:'https://other.example/'};resolve(res);});return req;});
  await assert.rejects(fetchBytes('https://www.deviantart.com/api/v1/oauth2/browse/tags',{headers:{Authorization:'Bearer fixture'}}),{code:'unsafeURL'});assert.equal(connections,2);
 });
+test('DeviantArt original-download quota is reported distinctly without leaking the response body',async t=>{
+ t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);
+ t.mock.method(https,'get',(url,options,resolve)=>{const req=new EventEmitter();req.setTimeout=()=>{};queueMicrotask(()=>{const res=Readable.from([Buffer.from('{"error":"invalid_request","error_description":"Free download limit reached."}')]);res.statusCode=400;res.headers={};resolve(res);});return req;});
+ await assert.rejects(fetchJSON('https://www.deviantart.com/api/v1/oauth2/deviation/download/fixture'),e=>e.code==='sourceQuotaReached'&&e.status===400&&!e.message.includes('Free download'));
+ await assert.rejects(fetchJSON('https://www.deviantart.com/api/v1/oauth2/browse/tags'),e=>e.code==='sourceUnavailable'&&e.status===400);
+});

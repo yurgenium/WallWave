@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {AISession} from './ai-session.mjs';
+import {DownloadQueue} from './download-queue.mjs';
 import {embeddingVersion,validEmbedding,tasteProfile,tasteSignature,assessTaste} from './visual-ai.mjs';
 import {fileURLToPath} from 'node:url';
 import {randomBytes,randomUUID} from 'node:crypto';
@@ -37,7 +38,7 @@ async function prepareOrientation(x,signal){
  if(portraitImage(x)!==null)return orientationAllowed(x);
  const sharp=await sharpModule();let source;
  if(x.localSource){const provider=db.providers.find(p=>p.id===x.provider),file=await fs.realpath(x.localSource),folder=await fs.realpath(provider.folder);if(!file.startsWith(folder+path.sep))throw new AppError('unsafeURL');source=file;}
- else source=await fetchBytes(x.url,{prefix:256*1024,limit:256*1024,signal});
+ else source=await fetchBytes(x.url,{prefix:256*1024,limit:256*1024,timeoutMs:15000,attempts:1,signal});
  Object.assign(x,sourceDimensions(await sharp(source,{limitInputPixels:64000000,animated:false}).metadata()));
  if(portraitImage(x)===null)throw new AppError('invalidImage');
  return orientationAllowed(x);
@@ -50,14 +51,16 @@ const cleanupConfirmations=new CleanupConfirmations();
 let libraryWrites=Promise.resolve();function mutateLibrary(fn){const task=libraryWrites.catch(()=>{}).then(fn);libraryWrites=task;return task;}
 let writes=Promise.resolve();function save(){const snapshot=structuredClone(db);writes=writes.catch(()=>{}).then(async()=>{await persist(path.join(dir,'state.json'),snapshot);await writeIndexes(dir,snapshot.items);});return writes;}
 let aiSession=null,profileCache=null;
-let job=null,controller=null,events=[],providerStatus={},used=await usage(dir),guard={code:'checking',idle:0},nextRetry=0,mutating=false,aiRequested=false,lastError=null,activeTask=Promise.resolve(),shuttingDown=false;
+let job=null,controller=null,events=[],providerStatus=Object.fromEntries(Object.entries(db.providerCooldowns||{}).filter(([id,status])=>db.providers.some(p=>p.id===id)&&status&&Number.isFinite(status.retryAt)&&status.retryAt>Date.now())),used=await usage(dir),guard={code:'checking',idle:0},nextRetry=0,mutating=false,aiRequested=false,lastError=null,activeTask=Promise.resolve(),shuttingDown=false;
 const errorEvents=new Set(['networkError','timeout','sourceUnavailable','rateLimited','diskLimit','itemLimit','invalidFeed','invalidImage','downloadFailed','aiUnavailable','saveFailed','operationFailed','apiKeyRequired','guardUnavailable','invalidArchive','monitorDisconnected','sourceAuthFailed']);
+errorEvents.add('sourceQuotaReached');
+errorEvents.add('sourceTemporarilyUnavailable');
 function event(code,detail={}){const entry={time:Date.now(),code,...detail};events.unshift(entry);events=events.slice(0,60);if(errorEvents.has(code))lastError={code,time:entry.time};}
 function desktopState(){return {settings:db.settings,job:db.workMode&&job?{...job,item:''}:job,aiRequested,guard,paused:db.paused,lastError,workMode:db.workMode,current:db.current,shortcutStatus,token};}
 // Cleared copies retain private metadata for duplicate prevention, not gallery cards.
 function libraryVisible(x){if(x.cleanupRemoved&&!x.downloaded)return false;if(!x.vote&&!db.providers.some(p=>p.id===x.provider&&p.enabled))return false;const settings=visibleSettings(db);return allowed(x,x.downloaded||x.vote?{...settings,excludedTags:[]}:settings);}
 function state(){return {...desktopState(),showCleanup:{count:shownCleanupCandidates(db).length,dueAt:db.showCleanup?.dueAt},providers:db.providers.map(p=>({...p,hasKey:!!keys[p.id]})),tagCleanup:{count:cleanupCandidates(db,{kind:'tags'}).length,dueAt:db.tagCleanup?.dueAt},items:db.items.filter(x=>libraryVisible(x)&&(!x.aiScreening?.rejected||x.downloaded)).map(({embedding,localSource,visualSample,aiTitle,...x})=>x),events:db.workMode?events.map(({item,...x})=>x):events,providerStatus,used,library:dir,aiRejectedCount:db.items.filter(x=>!x.downloaded&&x.aiScreening?.rejected).length,lastRefresh:db.lastRefresh,recentReviews:db.recentReviews||[],refreshOutcome:db.lastRefreshOutcome,refreshDownloaded:db.lastRefreshDownloaded,refreshTarget:db.lastRefreshTarget,refreshReason:db.lastRefreshReason,canRestore:!!backup,screen:desktop&&{width:desktop.width,height:desktop.height},monitors:monitors.map(({wallpaper,...m})=>({...m,current:db.monitorCurrent[m.id]})),automation:automationState(db,guard,{job,nextRetry,lastError,aiRequested}),exportPath,rollbackPath};}
-function start(kind,fn,automatic=false){if(job||shuttingDown)throw new AppError('busy');if(db.paused&&automatic)throw new AppError('pausedByUser');lastError=null;controller=new AbortController();const signal=controller.signal;job={kind,automatic,done:0,total:0,bytes:0,started:Date.now()};event('jobStarted',{kind});activeTask=(async()=>{try{await fn(signal);event('jobFinished',{kind});}catch(e){event(signal.aborted?'cancelled':errorCode(e),{kind});nextRetry=Date.now()+300000;}finally{aiSession?.close();aiSession=null;trimAIRejections();syncCleanups();job=null;controller=null;used=await usage(dir);await save();}})().catch(()=>event('saveFailed'));}
+function start(kind,fn,automatic=false){if(job||shuttingDown)throw new AppError('busy');if(db.paused&&automatic)throw new AppError('pausedByUser');lastError=null;controller=new AbortController();const signal=controller.signal;job={kind,automatic,done:0,total:0,bytes:0,started:Date.now()};event('jobStarted',{kind});activeTask=(async()=>{try{await fn(signal);event('jobFinished',{kind});}catch(e){event(signal.aborted?'cancelled':errorCode(e),{kind});nextRetry=Date.now()+300000;}finally{aiSession?.close();aiSession=null;trimAIRejections();syncCleanups();try{used=await usage(dir);await save();}finally{job=null;controller=null;}}})().catch(()=>event('saveFailed'));}
 function rememberSkipped(x,duplicateId){
  db.downloadSkips??={};delete db.downloadSkips[x.id];db.downloadSkips[x.id]={code:x.error,duplicateId,time:Date.now()};
  const ids=Object.keys(db.downloadSkips);for(const id of ids.slice(0,Math.max(0,ids.length-5000)))delete db.downloadSkips[id];
@@ -66,48 +69,69 @@ function skipDownload(x){
  const skip=db.downloadSkips?.[x.id];if(!skip||Date.now()-skip.time>86400000)return false;
  return skip.code==='portraitSkipped'?!hasPortraitScreen(monitors,desktop):skip.duplicateId&&db.items.some(y=>y.id===skip.duplicateId&&(y.downloaded||['ban','dislike'].includes(y.vote)));
 }
-async function refresh(signal){
+async function refresh(signal,{cachedOnly=false}={}){
  const needed=pendingCapacity(db);
- if(needed===0){db.lastRefresh=Date.now();db.lastRefreshOutcome='poolReady';event('poolReady');return;}
+ if(needed===0){db.lastRefresh=Date.now();db.lastRefreshOutcome='poolReady';db.lastRefreshDownloaded=0;db.lastRefreshTarget=0;db.lastRefreshReason='';event('poolReady');return;}
  await updateDownloadScreens();
- const available=p=>p.enabled&&(!job.automatic||automaticSource(p)),enabled=db.providers.filter(available);
- if(!enabled.length)throw new AppError('noSources');
+ const blocked=new Set(),available=p=>p.enabled&&!blocked.has(p.id)&&!(providerStatus[p.id]?.retryAt>Date.now())&&(!job.automatic||automaticSource(p)),enabled=db.providers.filter(available);
+ if(!enabled.length){const waiting=db.providers.filter(p=>p.enabled).map(p=>providerStatus[p.id]).find(s=>s?.retryAt>Date.now());if(waiting){nextRetry=Math.max(nextRetry,waiting.retryAt);throw new AppError(waiting.code);}throw new AppError('noSources');}
  const target=Math.min(db.settings.batch,needed),attempted=new Set();
- const maxAttempts=Math.max(96,target*32),maxPages=32;
- let downloaded=0,rejected=0,deferred=0,stopReason='',failure='';
- job.target=target;job.downloaded=0;
- const room=()=>downloaded<target&&pendingCapacity(db)>0&&!stopReason;
+ const maxAttempts=Math.max(512,target*32),maxPages=128;
+ let downloaded=0,rejected=0,deferred=0,stopReason='',failure='',lastProgress=Date.now();
+ const sourceFailures=new Map();
+ job.target=target;job.requestedTarget=db.settings.batch;job.poolLimit=db.settings.pendingTarget;job.downloaded=0;job.ready=0;job.active=0;job.phase='searching';
+ const room=()=>{if(!stopReason&&!job.ready&&Date.now()-lastProgress>120000)stopReason='searchNoProgress';return downloaded<target&&pendingCapacity(db)>0&&!stopReason;};
+ const noteFailure=x=>{
+  if(x.aiScreening?.rejected)rejected++;
+  else if(['aiDeferred','aiPreviewUnavailable'].includes(x.error)){deferred++;if(aiSession?.closed||['lowMemory','aiPaused'].includes(x.aiDeferredReason))stopReason='aiDeferred';}
+  else if(x.error&&!['duplicateImage','portraitSkipped','notAvailable','poolReady'].includes(x.error))failure=x.error;
+  if(x.error==='diskLimit')stopReason=x.error;
+  if(['downloadSlow','networkError','sourceUnavailable','downloadFailed'].includes(x.error)){
+   const count=(sourceFailures.get(x.provider)||0)+1;sourceFailures.set(x.provider,count);
+   if(count>=3){blocked.add(x.provider);failure='sourceTemporarilyUnavailable';providerStatus[x.provider]={code:failure,retryAt:Date.now()+60000,time:Date.now()};db.providerCooldowns??={};db.providerCooldowns[x.provider]=providerStatus[x.provider];}
+  }
+  if(['rateLimited','sourceAuthFailed','sourceQuotaReached'].includes(x.error)){blocked.add(x.provider);providerStatus[x.provider]={code:x.error,time:Date.now(),...x.sourceRetryAt&&{retryAt:x.sourceRetryAt}};}
+ };
+ const queue=new DownloadQueue({signal,changed:({ready,active})=>{job.ready=ready;job.active=active;},run:async(x,transferSignal)=>{
+  if(stopReason==='diskLimit'||!db.providers.some(p=>p.id===x.provider&&available(p))||pendingCapacity(db)===0)return;
+  if(await download(x,transferSignal,false,true)){downloaded++;job.downloaded=downloaded;lastProgress=Date.now();sourceFailures.delete(x.provider);}
+  else noteFailure(x);
+ }});
+ const remaining=()=>room()?Math.min(target-downloaded,pendingCapacity(db)):0;
  const consume=async candidates=>{
   job.total+=candidates.length;
   for(const x of candidates){
-   if(!room())break;
-   signal.throwIfAborted();
+   if(!room())break;signal.throwIfAborted();
    if(job.automatic&&guard.code!=='idle')throw new AppError('waitIdle');
-   if(attempted.has(x.id)||!db.providers.some(p=>p.id===x.provider&&available(p)))continue;
+   if(attempted.has(x.id)||x.downloadRetryAt>Date.now()||!db.providers.some(p=>p.id===x.provider&&available(p)))continue;
    if(attempted.size>=maxAttempts){stopReason='searchLimited';break;}
+   if(!await queue.room(remaining))break;
    attempted.add(x.id);x.vote??=null;
    if(!db.items.some(y=>y.id===x.id))db.items.push(x);
-   await save();
-   if(await download(x,signal)){downloaded++;job.downloaded=downloaded;}
-   else if(x.aiScreening?.rejected)rejected++;
-   else if(['aiDeferred','aiPreviewUnavailable'].includes(x.error)){deferred++;if(aiSession?.closed||['lowMemory','aiPaused'].includes(x.aiDeferredReason))stopReason='aiDeferred';}
-   else if(x.error&&!['duplicateImage','portraitSkipped','notAvailable'].includes(x.error))failure=x.error;
-   if(['diskLimit','rateLimited'].includes(x.error))stopReason=x.error;
+   job.phase='screening';let prepared=false;
+   try{prepared=await prepareDownload(x,queue.signal);}catch(e){if(queue.signal.aborted)throw e;downloadFailure(x,e);}
    job.done++;
+   if(!prepared){noteFailure(x);continue;}
+   lastProgress=Date.now();
+   if(!await queue.room(remaining))break;
+   queue.push(x);
   }
  };
- await consume(db.items.filter(x=>!screenedOut(x)&&!x.downloaded&&!['ban','dislike'].includes(x.vote)&&allowed(x,db.settings)));
+ let interrupted;
+ try{
+ await consume(rankCandidates(db.items.filter(x=>!x.vote&&!x.cleanupRemoved&&!x.cachePurged&&!screenedOut(x)&&!x.downloaded&&allowed(x,db.settings)),db));
  db.searchState??={};db.pages??={};
- const sources=enabled.map(p=>{
+ const sources=(cachedOnly?[]:enabled).map(p=>{
   const settings={...db.settings,tags:Math.random()<db.settings.diversity/100?[]:tasteSearchTags(db)};
   const signature=JSON.stringify([p.type,p.url,p.folder,p.rating,settings.tags,settings.excludedTags,settings.purity,settings.period,settings.language]);
   const cursor=searchCursor(db.searchState,p.id,signature,settings.tags.length?'interests':'discovery');
   return {p,settings,cursor,page:cursor.page+1,paged:['wallhaven','nasa','commons','local','deviantart','konachan'].includes(p.type),seenPages:new Set(),empty:0,wrapped:false,done:false,count:0};
  });
  for(let round=0;room()&&sources.some(s=>!s.done)&&round<maxPages;round++){
-  const pages=[],candidates=[],queued=new Set();
+  if(!await queue.room(remaining))break;
+  job.phase='searching';const pages=[],candidates=[],queued=new Set();
   for(const s of sources){
-   if(!db.providers.some(p=>p.id===s.p.id&&p.enabled))s.done=true;
+   if(!db.providers.some(p=>p.id===s.p.id&&available(p)))s.done=true;
    if(s.done)continue;
    signal.throwIfAborted();
    if(s.seenPages.has(s.page)){s.done=true;s.cursor.page=0;continue;}
@@ -147,13 +171,17 @@ async function refresh(signal){
   }
   if(round===maxPages-1&&room()&&sources.some(s=>!s.done))stopReason='searchLimited';
  }
- const reason=stopReason||failure||(deferred?'aiDeferred':rejected?'aiFiltered':'sourceEmpty');
+  await queue.drain();
+ }catch(e){interrupted=e;queue.close();try{await queue.drain();}catch{}}
+ finally{queue.close();}
+ const reason=downloaded>=target?(target<job.requestedTarget?'reserveBatchLimited':''):interrupted?(signal.aborted?'cancelled':errorCode(interrupted)):stopReason||failure||(deferred?'aiDeferred':rejected?'aiFiltered':'sourceEmpty');
  db.lastRefresh=Date.now();db.lastRefreshDownloaded=downloaded;db.lastRefreshTarget=target;db.lastRefreshReason=reason;
  db.lastRefreshOutcome=downloaded>=target?'poolUpdated':downloaded?'poolPartial':reason;
  // Recovered per-image/network failures stay in the journal, not as a false
  // global error after a successful batch. A full disk still requires attention.
  if(downloaded&&stopReason!=='diskLimit')lastError=null;
  event(db.lastRefreshOutcome,{count:downloaded,target,reason});
+ if(interrupted)throw interrupted;
 }
 function trimAIRejections(){const candidates=db.items.filter(x=>!x.downloaded&&!x.vote&&x.aiScreening?.rejected&&!x.maintenanceQuarantine&&!x.cleanupRemoved).sort((a,b)=>b.aiScreening.time-a.aiScreening.time);if(candidates.length>500){const remove=new Set(candidates.slice(500).map(x=>x.id));db.items=db.items.filter(x=>!remove.has(x.id));}}
 function currentTasteProfile(){const signature=tasteSignature(db.items);if(profileCache?.signature!==signature)profileCache=tasteProfile(db.items);return profileCache;}
@@ -161,7 +189,7 @@ function getAISession(signal){
  if(db.settings.ai==='off')throw new AppError('aiOff');
  if(os.totalmem()<8*1024**3||os.freemem()<3*1024**3)throw new AppError('lowMemory');
  if(['fullscreen','blockedProcess','onBattery','screenLocked','systemBusy'].includes(guard.code))throw new AppError('aiPaused');
- if(!aiSession)aiSession=new AISession(dir,{signal,mode:db.settings.ai,onEvent:code=>event(code),allowed:()=>db.settings.ai!=='off'&&!['fullscreen','blockedProcess','onBattery','screenLocked','systemBusy'].includes(guard.code)});
+ if(!aiSession)aiSession=new AISession(dir,{signal,mode:db.settings.ai,onEvent:code=>{event(code);if(code==='modelLoading'&&job?.kind==='refresh')job.phase='modelLoading';},allowed:()=>db.settings.ai!=='off'&&!['fullscreen','blockedProcess','onBattery','screenLocked','systemBusy'].includes(guard.code)});
  return aiSession;
 }
 function screenedOut(x){return !x.downloaded&&x.aiScreening?.rejected&&db.settings.ai!=='off'&&db.settings.aiFilter!=='off'&&x.aiScreening.mode===db.settings.aiFilter&&x.aiScreening.signature===currentTasteProfile().signature;}
@@ -176,7 +204,7 @@ async function screenBeforeDownload(x,signal){
   try{
    let bytes;
    if(x.localSource){const p=db.providers.find(p=>p.id===x.provider),real=await fs.realpath(x.localSource),base=await fs.realpath(p.folder);if(!real.startsWith(base+path.sep))throw new AppError('unsafeURL');bytes=await(await sharpModule())(real,{limitInputPixels:64000000,animated:false}).resize(512,512,{fit:'inside',withoutEnlargement:true}).jpeg().toBuffer();}
-   else bytes=await fetchBytes(x.preview,{limit:2*1024**2,signal:AbortSignal.any([signal,AbortSignal.timeout(30000)])});
+   else bytes=await fetchBytes(x.preview,{limit:2*1024**2,signal:AbortSignal.any([signal,AbortSignal.timeout(15000)]),attempts:1});
    const result=await getAISession(signal).request({id:x.id,bytes:bytes.toString('base64'),titles:false});
    if(!validEmbedding(result.embedding))throw new AppError('aiUnavailable');
    x.embedding=embedding=result.embedding;x.embeddingVersion=result.embeddingVersion;
@@ -188,7 +216,55 @@ async function screenBeforeDownload(x,signal){
  if(verdict.reason==='learning')event('aiFilterLearning');
  return true;
 }
-async function download(x,signal,manual=false){if(!x.downloaded&&!db.providers.some(p=>p.id===x.provider&&p.enabled))return false;if(!x.downloaded&&!x.vote&&pendingCapacity(db)===0){event('poolReady');return false;}job.item=x.title;job.provider=x.provider;job.bytes=0;job.itemTotal=0;try{await enrich(x,keys[x.provider],signal);const sourceProvider=db.providers.find(p=>p.id===x.provider);if(sourceProvider?.type==='local'&&!x.localSource){const match=(await searchProvider(sourceProvider,db.settings,null,signal)).find(y=>y.id===x.id);if(!match)throw new AppError('notAvailable');x.localSource=match.localSource;}if(!allowed(x,db.settings))throw new AppError('notAvailable');if(!manual&&!await screenBeforeDownload(x,signal)){await save();return false;}if(!await prepareOrientation(x,signal)){if(!x.downloaded){rememberSkipped({...x,error:'portraitSkipped'});db.items=db.items.filter(y=>y.id!==x.id);}event('portraitSkipped',{item:x.title});await save();return false;}if(x.localSource){const p=db.providers.find(p=>p.id===x.provider);const real=await fs.realpath(x.localSource),base=await fs.realpath(p.folder);if(!real.startsWith(base+path.sep))throw new AppError('unsafeURL');}Object.assign(x,await downloadImage(dir,x,{...db.settings,allowPortrait:hasPortraitScreen(monitors,desktop)},signal,(bytes,total)=>{job.bytes=bytes;job.itemTotal=total;},db.items));x.error=null;delete x.cachePurged;event('downloaded',{item:x.title});await save();return true;}catch(e){if(signal.aborted)throw e;x.error=errorCode(e,'downloadFailed');if(x.error==='rateLimited')nextRetry=Math.max(nextRetry,Date.now()+Math.max(60000,e.retryAfter||0));if(!x.downloaded&&['duplicateImage','portraitSkipped'].includes(x.error)){rememberSkipped(x,e.duplicateId);}if(x.error==='duplicateImage'||x.error==='portraitSkipped'&&!x.downloaded)db.items=db.items.filter(y=>y.id!==x.id);event(x.error,{item:x.title});await save();return false;}}
+async function prepareDownload(x,signal,manual=false){
+ if(!x.downloaded&&!db.providers.some(p=>p.id===x.provider&&p.enabled)){x.error='notAvailable';return false;}
+ if(!x.downloaded&&!x.vote&&pendingCapacity(db)===0){x.error='poolReady';event('poolReady');return false;}
+ if(!allowed(x,db.settings))throw new AppError('notAvailable');
+ if(x.size>db.settings.maxItemMB*1024**2)throw new AppError('itemLimit');
+ // A rejected preview does not need an API details request or an original.
+ if(!manual&&!await screenBeforeDownload(x,signal))return false;
+ await enrich(x,keys[x.provider],signal);
+ if(x.size>db.settings.maxItemMB*1024**2)throw new AppError('itemLimit');
+ const sourceProvider=db.providers.find(p=>p.id===x.provider);
+ if(sourceProvider?.type==='local'&&!x.localSource){const match=(await searchProvider(sourceProvider,db.settings,null,signal)).find(y=>y.id===x.id);if(!match)throw new AppError('notAvailable');x.localSource=match.localSource;}
+ if(!allowed(x,db.settings))throw new AppError('notAvailable');
+ if(!await prepareOrientation(x,signal))throw new AppError('portraitSkipped');
+ if(x.localSource){const p=db.providers.find(p=>p.id===x.provider);const real=await fs.realpath(x.localSource),base=await fs.realpath(p.folder);if(!real.startsWith(base+path.sep))throw new AppError('unsafeURL');}
+ return true;
+}
+function downloadFailure(x,e){
+ x.error=errorCode(e,'downloadFailed');delete x.sourceRetryAt;
+ if(x.error==='timeout'&&job.kind==='refresh'){x.error='downloadSlow';x.downloadRetryAt=Date.now()+10*60000;}
+ if(x.error==='sourceQuotaReached'){x.sourceRetryAt=Date.now()+Math.max(60000,e.retryAfter||0);db.providerCooldowns??={};db.providerCooldowns[x.provider]={code:'sourceQuotaReached',retryAt:x.sourceRetryAt,time:Date.now()};}
+ if(x.error==='rateLimited')nextRetry=Math.max(nextRetry,Date.now()+Math.max(60000,e.retryAfter||0));
+ if(!x.downloaded&&['duplicateImage','portraitSkipped'].includes(x.error))rememberSkipped(x,e.duplicateId);
+ if(x.error==='duplicateImage'||x.error==='portraitSkipped'&&!x.downloaded)db.items=db.items.filter(y=>y.id!==x.id);
+ event(x.error,{item:x.title});
+}
+async function download(x,signal,manual=false,prepared=false){
+ const refresh=job.kind==='refresh',transfer={bytes:0,total:0};
+ if(!refresh){job.item=x.title;job.provider=x.provider;job.bytes=0;job.itemTotal=0;}
+ try{
+  if(!prepared&&!await prepareDownload(x,signal,manual)){await save();return false;}
+  if(refresh){job.transfers??={};job.transfers[x.id]=transfer;}
+  const progress=(bytes,total)=>{if(refresh){transfer.bytes=bytes;transfer.total=total;}else{job.bytes=bytes;job.itemTotal=total;}};
+  const commit=async work=>mutateLibrary(async()=>{
+   if(!db.providers.some(p=>p.id===x.provider&&p.enabled)||!allowed(x,db.settings)||['ban','dislike'].includes(x.vote))throw new AppError('notAvailable');
+   if(!x.downloaded&&!x.vote&&pendingCapacity(db)===0)throw new AppError('poolReady');
+   if(db.settings.ai!=='off'&&db.settings.aiFilter!=='off'){
+    const profile=currentTasteProfile(),mode=db.settings.aiFilter,minimum=mode==='strict'?3:5;
+    if(profile.likes>=minimum&&profile.dislikes>=minimum&&!validEmbedding(x.embedding)){x.aiDeferredReason='preferenceChanged';throw new AppError('aiDeferred');}
+    if(x.aiScreening?.signature!==profile.signature||x.aiScreening?.mode!==mode){
+     const verdict=assessTaste(x.embedding,profile,mode);x.aiScreening={...verdict,mode,signature:profile.signature,time:Date.now()};if(verdict.rejected)throw new AppError('aiRejected');
+    }
+   }
+   const result=await work();Object.assign(x,result);return result;
+  });
+  Object.assign(x,await downloadImage(dir,x,{...db.settings,allowPortrait:hasPortraitScreen(monitors,desktop)},signal,progress,db.items,refresh?{commit,currentItems:()=>db.items,currentSettings:()=>({...db.settings,allowPortrait:hasPortraitScreen(monitors,desktop)}),network:{timeoutMs:90000,attempts:1}}:{}));
+  x.error=null;delete x.sourceRetryAt;delete x.downloadRetryAt;delete x.cachePurged;event('downloaded',{item:x.title});await save();return true;
+ }catch(e){if(signal.aborted)throw e;downloadFailure(x,e);await save();return false;}
+ finally{if(refresh)delete job.transfers?.[x.id];}
+}
 async function updateGuard(){try{const a=await activity();const blocked=a.processes.some(p=>db.settings.pauseProcesses.some(v=>v.toLowerCase()===p.toLowerCase()));const old=guard;guard={...a,freeMemory:os.freemem(),locked:desktopContext.locked,code:!a.supported?'windowsUnavailable':desktopContext.locked?'screenLocked':a.fullscreen?'fullscreen':blocked?'blockedProcess':db.settings.pauseOnBattery&&a.onBattery?'onBattery':a.cpuLoad==null?(a.idle<120000?'active':'idle'):(resourceAvailability(a,os.freemem(),os.totalmem()).ready?'idle':'systemBusy')};if(old.fullscreen&&!a.fullscreen&&db.settings.changeAfterFullscreen)queueTrigger('fullscreen');if(job?.automatic&&guard.code!=='idle')controller?.abort();if(confirmShows(db,guard)){syncShownCleanup(db);await save();}}catch{guard={idle:0,code:'guardUnavailable'};if(job?.automatic)controller?.abort();}}
 function queueTrigger(reason){if(!db.rotationTriggers.includes(reason))db.rotationTriggers.push(reason);}
 async function indexCached(signal){const items=db.items.filter(x=>x.downloaded&&!x.visualHash&&!x.fingerprintError).slice(0,8);job.total=items.length;for(const x of items){signal.throwIfAborted();if(guard.code!=='idle')throw new AppError('waitIdle');try{const fingerprint=await visualFingerprint(await fs.readFile(imagePath(dir,x)));Object.assign(x,fingerprint,{hash:x.hash||fingerprint.hash});}catch(e){if(signal.aborted)throw e;x.fingerprintError=true;event('invalidImage');}job.done++;await save();}}
@@ -244,9 +320,9 @@ const server=http.createServer(async(req,res)=>{let ownsMutation=false;try{
  if(url==='/api/cleanup-preview'){try{const preview=cleanupConfirmations.prepare(db,b,randomUUID());send(res,200,preview);return;}catch(e){throw new AppError(e.message);}}
  else if(url==='/api/cleanup'){if(job)throw new AppError('busy');let items;try{items=cleanupConfirmations.consume(db,b.ticket);}catch(e){throw new AppError(e.message);}const result=await cleanupCopies(items);send(res,200,result);return;}
  else if(url==='/api/settings'){db.settings=validate(b);syncCleanups();if(db.settings.ai==='off')aiRequested=false;db.pages={};await save();}
- else if(url==='/api/provider'){const existing=db.providers.find(p=>p.id===b.id);if(existing){for(const x of db.items.filter(x=>x.provider===existing.id)){x.providerName=existing.name;x.sourceType=existing.type;}if((b.remove||b.enabled===false)&&job?.provider===existing.id)controller?.abort();}if(b.remove){if(existing){await mutateLibrary(()=>removeProviderCopies(dir,db,existing.id));db.providers=db.providers.filter(p=>p.id!==existing.id);}delete keys[b.id];}else{const p=validateProvider({...existing,...b,id:existing?.id||randomUUID().replaceAll('-','')});delete p.apiKey;delete p.remove;delete p.clearKey;delete p.hasKey;if(!['safe','suggestive','adult'].includes(p.rating||'safe'))throw new AppError('invalidProvider');if(existing)Object.assign(existing,p);else db.providers.push(p);if(typeof b.apiKey==='string'&&b.apiKey.trim()){if(keys[p.id]!==b.apiKey.trim())delete db.searchState?.[p.id];keys[p.id]=b.apiKey.trim();}if(b.clearKey){delete keys[p.id];delete db.searchState?.[p.id];}}await persist(path.join(dir,'credentials.json'),keys);await save();}
+ else if(url==='/api/provider'){const existing=db.providers.find(p=>p.id===b.id);if(existing){for(const x of db.items.filter(x=>x.provider===existing.id)){x.providerName=existing.name;x.sourceType=existing.type;}if((b.remove||b.enabled===false)&&job?.provider===existing.id)controller?.abort();}if(b.remove){if(existing){await mutateLibrary(()=>removeProviderCopies(dir,db,existing.id));db.providers=db.providers.filter(p=>p.id!==existing.id);}delete keys[b.id];delete db.providerCooldowns?.[b.id];delete providerStatus[b.id];}else{const p=validateProvider({...existing,...b,id:existing?.id||randomUUID().replaceAll('-','')});delete p.apiKey;delete p.remove;delete p.clearKey;delete p.hasKey;if(!['safe','suggestive','adult'].includes(p.rating||'safe'))throw new AppError('invalidProvider');if(existing)Object.assign(existing,p);else db.providers.push(p);if(typeof b.apiKey==='string'&&b.apiKey.trim()){if(keys[p.id]!==b.apiKey.trim()){delete db.searchState?.[p.id];delete providerStatus[p.id];delete db.providerCooldowns?.[p.id];}keys[p.id]=b.apiKey.trim();}if(b.clearKey){delete db.providerCooldowns?.[p.id];delete providerStatus[p.id];delete keys[p.id];delete db.searchState?.[p.id];}}await persist(path.join(dir,'credentials.json'),keys);await save();}
  else if(url==='/api/refresh')start('refresh',refresh);
- else if(url==='/api/retry-pending')start('download',async signal=>{await updateDownloadScreens();const items=db.items.filter(x=>!screenedOut(x)&&!x.downloaded&&!['dislike','ban'].includes(x.vote)&&allowed(x,db.settings)&&db.providers.some(p=>p.id===x.provider&&p.enabled));job.total=items.length;for(const x of items){signal.throwIfAborted();if(pendingCapacity(db)===0)break;await download(x,signal);job.done++;}});
+ else if(url==='/api/retry-pending')start('refresh',signal=>refresh(signal,{cachedOnly:true}));
  else if(url==='/api/ai'){if(db.settings.ai==='off')throw new AppError('aiOff');aiRequested=true;event('aiQueued');}
  else if(url==='/api/vote'){const x=db.items.find(x=>x.id===b.id);if(!x||![null,'like','dislike','ban','neutral','deferred'].includes(b.vote))throw new AppError('invalidRequest');const returning=b.vote===null&&['neutral','deferred'].includes(x.vote);await mutateLibrary(async()=>{await changeVote(dir,x,b.vote);if(['ban','dislike'].includes(b.vote)){x.rejectedAt??=Date.now();}else delete x.rejectedAt;if(b.vote!==null&&x.downloaded)rememberReview(db,x.id,b.reviewedAt);if(returning){x.reviewReturnedAt=Date.now();db.items=db.items.filter(y=>y.id!==x.id);db.items.push(x);}else delete x.reviewReturnedAt;await purgeRejectedFiles(dir,db);used=await usage(dir);await save();});const targets=rejectionTargets(x.id);if(['ban','dislike'].includes(b.vote)&&targets.length){if(job)await replaceRejected(x.id,targets);else start('apply',()=>replaceRejected(x.id,targets));}}
  else if(url==='/api/download'){const x=db.items.find(x=>x.id===b.id);if(!x||!allowed(x,db.settings)||['ban','dislike'].includes(x.vote)||!db.providers.find(p=>p.id===x.provider)?.enabled)throw new AppError('notAvailable');start('download',async signal=>{await updateDownloadScreens();await download(x,signal,true);});}
@@ -261,7 +337,7 @@ const server=http.createServer(async(req,res)=>{let ownsMutation=false;try{
  if(req.method!=='GET'){send(res,405,{error:'invalidRequest'});return;}
  if(url.startsWith('/full-preview/')){if(req.headers['sec-fetch-site']==='cross-site')throw new AppError('invalidRequest');const id=decodeURIComponent(url.slice(14)),x=db.items.find(x=>x.id===id&&x.downloaded&&libraryVisible(x));if(!x)throw new AppError('notAvailable');const file=await frameSource(dir,x),sharp=await sharpModule(),meta=await sharp(file,{limitInputPixels:64000000,animated:false}).metadata(),mime={jpeg:'image/jpeg',png:'image/png',webp:'image/webp',avif:'image/avif'}[meta.format];if(!mime)throw new AppError('invalidImage');res.writeHead(200,{'Content-Type':mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(await fs.readFile(file));return;}
  if(url.startsWith('/frame-preview/')){if(req.headers['sec-fetch-site']==='cross-site')throw new AppError('invalidRequest');const id=decodeURIComponent(url.slice(15)),x=db.items.find(x=>x.id===id);if(!x?.downloaded||!libraryVisible(x)||['ban','dislike'].includes(x.vote))throw new AppError('notAvailable');const monitorId=u.searchParams.get('monitorId')||'',screen=monitors.find(m=>m.id===monitorId);if(monitorId&&!screen)throw new AppError('monitorDisconnected');const frame=validateFrame({fit:u.searchParams.get('fit')||'cover',x:Number(u.searchParams.get('x')??.5),y:Number(u.searchParams.get('y')??.5),flip:u.searchParams.get('flip')==='true'});const width=screen?.width||db.settings.width,height=screen?.height||db.settings.height,scale=Math.min(1,960/width,640/height),bytes=await renderFrame(await frameSource(dir,x),Math.max(1,Math.round(width*scale)),Math.max(1,Math.round(height*scale)),frame,85);res.writeHead(200,{'Content-Type':'image/jpeg','Cache-Control':'no-store'});res.end(bytes);return;}
- let file;if(url.startsWith('/image/')){const id=url.slice(7);const x=db.items.find(x=>x.id===id&&x.downloaded&&libraryVisible(x));if(!x){send(res,404,{error:'notFound'});return;}file=path.join(dir,'thumbnails',x.id+'.jpg');if(x.thumbnailVersion!==2){const sharp=await sharpModule();const bytes=await sharp(await frameSource(dir,x)).rotate().resize(1280,800,{fit:'inside',withoutEnlargement:true}).jpeg({quality:92}).toBuffer();await fs.writeFile(file,bytes);x.thumbnailVersion=2;}res.setHeader('Content-Type','image/jpeg');}else{const files={'/source-tiles.js':'source-tiles.js','/source-tiles.css':'source-tiles.css','/app-icon.svg':'app-icon.svg','/':'index.html','/app.js':'app.js','/style.css':'style.css','/i18n.js':'i18n.js','/frame-editor.js':'frame-editor.js','/provider-catalog.js':'provider-catalog.js','/wallpaper-source.js':'wallpaper-source.js','/review-state.js':'review-state.js','/tag-input.js':'tag-input.js','/tag-editor.js':'tag-editor.js','/show-cleanup.js':'show-cleanup.js','/cleanup-dialog.js':'cleanup-dialog.js','/shortcut-input.js':'shortcut-input.js','/redesign.js':'redesign.js','/redesign.css':'redesign.css'};if(!files[url]){send(res,404,{error:'notFound'});return;}file=path.join(root,'public',files[url]);res.setHeader('Content-Type',url.endsWith('.js')?'text/javascript; charset=utf-8':url.endsWith('.css')?'text/css':url.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8');}res.setHeader('Cache-Control','no-store');res.end(await fs.readFile(file));
+ let file;if(url.startsWith('/image/')){const id=url.slice(7);const x=db.items.find(x=>x.id===id&&x.downloaded&&libraryVisible(x));if(!x){send(res,404,{error:'notFound'});return;}file=path.join(dir,'thumbnails',x.id+'.jpg');if(x.thumbnailVersion!==2){const sharp=await sharpModule();const bytes=await sharp(await frameSource(dir,x)).rotate().resize(1280,800,{fit:'inside',withoutEnlargement:true}).jpeg({quality:92}).toBuffer();await fs.writeFile(file,bytes);x.thumbnailVersion=2;}res.setHeader('Content-Type','image/jpeg');}else{const files={'/download-progress.js':'download-progress.js','/source-tiles.js':'source-tiles.js','/source-tiles.css':'source-tiles.css','/app-icon.svg':'app-icon.svg','/':'index.html','/app.js':'app.js','/style.css':'style.css','/i18n.js':'i18n.js','/frame-editor.js':'frame-editor.js','/provider-catalog.js':'provider-catalog.js','/wallpaper-source.js':'wallpaper-source.js','/review-state.js':'review-state.js','/tag-input.js':'tag-input.js','/tag-editor.js':'tag-editor.js','/show-cleanup.js':'show-cleanup.js','/cleanup-dialog.js':'cleanup-dialog.js','/shortcut-input.js':'shortcut-input.js','/redesign.js':'redesign.js','/redesign.css':'redesign.css'};if(!files[url]){send(res,404,{error:'notFound'});return;}file=path.join(root,'public',files[url]);res.setHeader('Content-Type',url.endsWith('.js')?'text/javascript; charset=utf-8':url.endsWith('.css')?'text/css':url.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8');}res.setHeader('Cache-Control','no-store');res.end(await fs.readFile(file));
  }catch(e){send(res,e.code==='ENOENT'?404:400,{error:e instanceof AppError?e.code:'operationFailed'});}finally{if(ownsMutation)mutating=false;}});
 server.listen(port,'127.0.0.1',()=>{host=`127.0.0.1:${server.address().port}`;console.log(`WallWave: http://${host}`);process.send?.({type:'ready',port:server.address().port});});
 async function shutdown(){if(shuttingDown)return;shuttingDown=true;controller?.abort();aiRequested=false;await activeTask;await save();server.close(()=>process.exit(0));server.closeAllConnections();setTimeout(()=>process.exit(0),3000).unref();}

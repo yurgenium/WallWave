@@ -7,9 +7,11 @@ const {env,AutoProcessor,CLIPVisionModelWithProjection,RawImage}=await import('@
 env.cacheDir=path.join(dir,'models');env.allowLocalModels=false;
 const threads=process.env.WALLBLOOM_AI==='eco'?1:2;
 env.backends.onnx.wasm.numThreads=threads;
-const offline={local_files_only:process.env.WALLWAVE_AI_OFFLINE==='1'};
+const modelId='Xenova/clip-vit-base-patch32';
+const cachedFiles=await Promise.all(['config.json','preprocessor_config.json','onnx/vision_model_quantized.onnx'].map(async file=>{try{return (await fs.stat(path.join(env.cacheDir,modelId,file))).size>0;}catch{return false;}}));
+const offline={local_files_only:process.env.WALLWAVE_AI_OFFLINE==='1'||cachedFiles.every(Boolean)};
 if(offline.local_files_only){env.allowLocalModels=true;env.localModelPath=env.cacheDir;env.allowRemoteModels=false;}
-const modelId='Xenova/clip-vit-base-patch32',options={...offline,dtype:'q8',device:'cpu',session_options:{intraOpNumThreads:threads,interOpNumThreads:1}};
+const options={...offline,dtype:'q8',device:'cpu',session_options:{intraOpNumThreads:threads,interOpNumThreads:1}};
 let vision,processor;
 const cached=path.join(env.cacheDir,modelId,'onnx/vision_model_quantized.onnx');try{if((await fs.stat(cached)).size===0)await fs.unlink(cached);}catch{}
 async function analyze(item){

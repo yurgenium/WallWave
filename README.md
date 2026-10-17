@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.21/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.21 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.22/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.22 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.21/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.21) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.22/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.22) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -136,6 +136,12 @@
 
 Реально подходящих новых обоев может оказаться меньше порции. Приложение показывает частичный результат и причину остановки: закончились варианты, сработал фильтр, достигнут предел проверки или возникла ошибка. Подробности находятся в **«Журнале»**.
 
+**Две шкалы подбора:** «Подготовлено» считает обои, прошедшие отбор, включая уже скачанные и ожидающие загрузки. «Скачано» считает только сохранённые файлы. Например, **9 из 24 подготовлено, 5 из 24 скачано** означает, что ещё 4 изображения загружаются или стоят в очереди. Просмотренные и отклонённые кандидаты в эти числа не входят; шкалы не переключаются на байты отдельного файла.
+
+Подбор держит небольшую очередь и передаёт **до двух оригиналов одновременно**. Проверка миниатюры предшествует запросу полных данных; сведения Wallhaven кешируются на сутки. При равной оценке раньше выбираются меньшие файлы. Медленные файлы откладываются, а ошибки одной площадки не мешают остальным. Запросы API идут с интервалами и учитывают ограничения источника. **«Продолжить подбор»** запускает такую же ограниченную партию, вместо скачивания всех когда-либо найденных кандидатов.
+
+Время зависит от скорости площадки, размера оригиналов и количества подходящих изображений. Если источник сообщает лимит скачиваний, он временно пропускается; причина видна в его плитке. Параметры качества и режим фильтра предпочтений сохраняются.
+
 ### 📁 Где находятся обои и настройки
 
 **Папка данных:**
@@ -203,7 +209,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.21/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.21). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.22/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.22). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -305,6 +311,12 @@ Rejected originals are not downloaded. Without an available preview, Cautious al
 For example, a batch of **12** with **28 out of 30** unreviewed images allows at most **2** new downloads. Rate some images or adjust the limit to make room.
 
 A source may have fewer suitable new images than requested. Partial downloads show the count and reason; the **Activity** log provides details.
+
+**Two selection bars:** Prepared counts wallpapers that passed selection, including saved and queued files. Downloaded counts only saved files. For example, **9 of 24 prepared and 5 of 24 downloaded** means four more wallpapers are queued or downloading. Rejected and merely inspected candidates are excluded; the bars do not switch to an individual file’s byte count.
+
+Selection uses a small queue with **up to two original-file transfers at once**. Thumbnail screening comes before full metadata requests; Wallhaven metadata is cached for a day. Equally ranked candidates prefer smaller originals. Slow files are deferred, and one source’s errors do not block healthy sites. API requests are paced and respect source limits. **Continue selection** uses the same bounded batch rather than downloading every previously found candidate.
+
+Completion time depends on source speed, original sizes and the number of suitable images. A source reporting a download limit is temporarily skipped, with its reason shown on the tile. Quality settings and the selected preference-filter mode are preserved.
 
 ### 📁 Data and updates
 

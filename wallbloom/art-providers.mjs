@@ -23,7 +23,7 @@ export class ArtSources{
   if(typeof credentials.access_token==='string'&&!credentials.client_secret)return credentials.access_token;
   if(!/^\d{1,20}$/.test(credentials.client_id||'')||typeof credentials.client_secret!=='string'||!credentials.client_secret.trim())throw new AppError('sourceAuthFailed');
   const cached=this.tokens.get(key);if(!renew&&cached?.expires>this.now()+60000)return cached.value;
-  const body=new URLSearchParams({grant_type:'client_credentials',client_id:credentials.client_id,client_secret:credentials.client_secret,scope:'browse'}).toString();
+  const body=new URLSearchParams({grant_type:'client_credentials',client_id:credentials.client_id,client_secret:credentials.client_secret}).toString();
   let json;try{json=await this.request('https://www.deviantart.com/oauth2/token',signal,{method:'POST',body,headers:{'Content-Type':'application/x-www-form-urlencoded'}});}catch(e){if([400,401,403].includes(e.status))throw new AppError('sourceAuthFailed');throw e;}
   if(typeof json.access_token!=='string'||!json.access_token)throw new AppError('sourceAuthFailed');
   if(this.tokens.size>=64)this.tokens.clear();this.tokens.set(key,{value:json.access_token,expires:this.now()+Math.min(86400,Math.max(60,Number(json.expires_in)||3600))*1000});return json.access_token;
