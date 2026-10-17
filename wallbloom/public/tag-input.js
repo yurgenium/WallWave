@@ -1,4 +1,5 @@
 // CSV-style lists keep commas inside quoted tag names intact.
+export const tagIdentity=value=>value.normalize('NFC').replaceAll('_',' ').replace(/\s+/g,' ').trim().toLowerCase();
 export const maxTags=1000,maxTagLength=80;
 export function tagListError(tags){
  if(!Array.isArray(tags)||tags.some(t=>typeof t!=='string'))return 'invalidSettings';

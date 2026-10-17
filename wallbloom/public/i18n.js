@@ -116,3 +116,54 @@ Object.assign(strings.ru,{tooManyTags:'В одном списке допуска
 Object.assign(strings.en,{tooManyTags:'Each list supports up to 1000 tags. Please remove the extra tags and save settings.',tagTooLong:'Each tag must be no longer than 80 characters.',tagSearch:'Search tags in this list',tagSearchPlaceholder:'Tag name or part of a name',tagCounts:'Tags: {count} / {max} · Matches: {found}',tagRemove:'Remove tag “{tag}” from the list',tagNoMatches:'No matching tags',tagEmpty:'The list is empty',tagPagePrevious:'Previous tags',tagPageNext:'Next tags',tagEditHelp:'Search does not change the list. Tag removals and field edits take effect after selecting Save.'});
 Object.assign(strings.ru,{showCleanupTitle:'Автоочистка по количеству показов',showCleanupHelp:'Выберите папки и укажите отдельный порог для каждой. Показ засчитывается после 30 секунд видимого рабочего стола; на любых мониторах используется общий счётчик обоев. Одновременный показ тех же обоев на нескольких экранах считается одним. Текущие обои защищены до смены на всех мониторах. Очистка копий необратима и запускается через минуту после достижения порога; уже накопленные показы учитываются. Отключение правила и сохранение настроек отменяет ожидающую очистку. Личные файлы в папках-источниках и оценки сохраняются. Дизлайки и исключённые обои очищаются отдельно, через 5 минут после оценки, без настройки числа показов.',showCleanupAfter:'Удалять после показов (1–1000)',showCleanupWaiting:'Ожидают очистки по показам',invalidCleanupSettings:'Для каждой папки укажите целое количество показов от 1 до 1000.',wallpaperShows:'Показов на рабочем столе',cleanupFolder_pending:'Неоценённые',cleanupFolder_like:'Понравившиеся',cleanupFolder_neutral:'Нейтральные',cleanupFolder_deferred:'Отложенные'});
 Object.assign(strings.en,{showCleanupTitle:'Automatic cleanup by display count',showCleanupHelp:'Choose folders and a separate threshold for each. A display counts after 30 seconds of visible desktop time; all monitors contribute to the wallpaper’s shared counter. Showing the same wallpaper on several screens at once counts once. Current wallpapers are protected until replaced on every monitor. Deleting library copies is irreversible; cleanup starts after a one-minute grace period once the threshold is reached. Existing counts are included. Disable the rule and save to cancel pending cleanup. Personal source files and ratings are preserved. Disliked and excluded copies are cleared separately, five minutes after rating, without a display-count setting.',showCleanupAfter:'Delete after displays (1–1000)',showCleanupWaiting:'Awaiting cleanup by display count',invalidCleanupSettings:'Please enter a whole display count from 1 to 1000 for each folder.',wallpaperShows:'Desktop displays',cleanupFolder_pending:'Unreviewed',cleanupFolder_like:'Liked',cleanupFolder_neutral:'Neutral',cleanupFolder_deferred:'Later'});
+
+Object.assign(strings.ru,{
+  "enableSource": "Включить источник",
+  "disableSource": "Отключить источник",
+  "sourceKeySaved": "Доступ сохранён",
+  "sourceKeyRequired": "Нужен доступ API",
+  "sourceKeyOptional": "Ключ для NSFW",
+  "sourceNoKey": "Без ключа",
+  "sourceManual": "По кнопке подбора",
+  "pasteKey": "Вставить из буфера",
+  "clipboardEmpty": "В буфере нет подходящего значения. Введите данные в поле.",
+  "clipboardDenied": "Не удалось прочитать буфер обмена. Вставьте значение в поле с помощью Ctrl+V.",
+  "keyPasted": "Данные вставлены. Для применения нажмите «Сохранить».",
+  "clientCredentialsRequired": "Укажите Client ID и Client Secret приложения DeviantArt.",
+  "deviantartCredentialsHelp": "В настройках приложений DeviantArt создайте личное приложение типа Confidential и скопируйте Client ID и Client Secret. Токен для поиска обновляется автоматически; пароль аккаунта не требуется.",
+  "sourceAccess": "Настроить доступ API ↗",
+  "sourceSite": "Открыть сайт ↗",
+  "sourceAuthFailed": "Источник не принял данные доступа. Проверьте ключ или Client ID и Client Secret.",
+  "manualSourcesOnly": "Включены только источники с подбором по кнопке",
+  "sourcesSharedTaste": "Единый профиль вкусов для всех источников. Теги понравившихся обоев помогают площадкам искать новые варианты, а при включённом ИИ локальный CLIP оценивает их соответствие предпочтениям. Изображения и оценки для анализа остаются на компьютере.",
+  "deviantart": "DeviantArt",
+  "pixabay": "Pixabay",
+  "konachan": "Konachan"
+});
+
+Object.assign(strings.en,{
+  "enableSource": "Enable source",
+  "disableSource": "Disable source",
+  "sourceKeySaved": "Access saved",
+  "sourceKeyRequired": "API access required",
+  "sourceKeyOptional": "Key for NSFW",
+  "sourceNoKey": "No key needed",
+  "sourceManual": "Manual search",
+  "pasteKey": "Paste from clipboard",
+  "clipboardEmpty": "No suitable value was found. Enter the value in the field.",
+  "clipboardDenied": "Clipboard access failed. Paste the value into the field with Ctrl+V.",
+  "keyPasted": "Pasted. Select Save to apply.",
+  "clientCredentialsRequired": "Enter the Client ID and Client Secret of a DeviantArt application.",
+  "deviantartCredentialsHelp": "Create a personal Confidential application in DeviantArt application settings and copy its Client ID and Client Secret. Search tokens renew automatically; no account password is required.",
+  "sourceAccess": "Set up API access ↗",
+  "sourceSite": "Open website ↗",
+  "sourceAuthFailed": "The source rejected its credentials. Check the API key or Client ID and Client Secret.",
+  "manualSourcesOnly": "Enabled sources require a manual search",
+  "sourcesSharedTaste": "One taste profile across all sources. Tags from liked wallpapers help each platform find candidates; when AI is enabled, local CLIP checks how well images match preferences. Images and ratings used for analysis stay on this computer.",
+  "deviantart": "DeviantArt",
+  "pixabay": "Pixabay",
+  "konachan": "Konachan"
+});
+
+Object.assign(strings.ru,{sourceApiKey:'API-ключ',sourceAccessSaved:'Данные доступа сохранены',sourceCredit:'Авторство'});
+Object.assign(strings.en,{sourceApiKey:'API key',sourceAccessSaved:'Access details saved',sourceCredit:'Credit'});

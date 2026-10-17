@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.18/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.18 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.19/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.19 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.18/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.18) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.19/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.19) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -45,7 +45,7 @@
 
 | Возможность | Как это помогает |
 | --- | --- |
-| **Поиск по интересам** | Теги и оценки влияют на подбор. Доступны Wallhaven, Bing, NASA Images, Wikimedia Commons, локальные папки и совместимые JSON-каталоги по HTTPS. |
+| **Поиск по интересам** | Теги и оценки влияют на подбор. Доступны Wallhaven, DeviantArt, Pixabay, Konachan, Bing, NASA Images, Wikimedia Commons, локальные папки и совместимые JSON-каталоги по HTTPS. |
 | **Библиотека с оценками** | Понравившиеся, нейтральные и отложенные обои легко найти отдельно. Повторы отсекаются при загрузке. |
 | **Автоматическое пополнение и смена** | Можно задать интервалы и расписание. Фоновые задачи учитывают простой и нагрузку компьютера. |
 | **Несколько мониторов** | Для экранов доступны отдельные параметры смены, категорий и кадрирования. |
@@ -61,6 +61,27 @@
 Теги с запятой записываются в кавычках: `"название, с запятой", nature`. Нажатие на тег в карточке добавляет его целиком; правое нажатие управляет исключением.
 
 Отключение источника скрывает его неоценённые изображения. Удаление источника освобождает такие копии из библиотеки; оценённые изображения и личные исходные файлы сохраняются.
+
+### 🌐 Источники и общий профиль вкусов
+
+В **«Источниках»** каждая площадка представлена плиткой: описание, переключатель, состояние доступа и кнопки настройки. Вставка из буфера заполняет поле; данные применяются после **«Сохранить»**. Затем источник можно включить. Раздел доступен и на главном экране, и в настройках.
+
+| Источник | Что требуется | Режим |
+| --- | --- | --- |
+| **Wallhaven** | Ключ нужен для NSFW; для SFW не обязателен | Ручной и фоновый подбор |
+| **DeviantArt** | Личные Client ID и Client Secret | Ручной и фоновый подбор; только работы с разрешённым скачиванием |
+| **Pixabay** | Личный API-ключ | Подбор по кнопке, SafeSearch; кеш ответов на 24 часа |
+| **Konachan** | Ключ не требуется | Ручной и фоновый подбор с выбранными SFW / Sketchy / NSFW |
+| **Bing, NASA Images, Wikimedia Commons** | Ключ не требуется | Ручной и фоновый подбор |
+| **Локальные папки** | Путь к папке с изображениями | Личные оригиналы сохраняются |
+
+**Как получить доступ:** для Pixabay откройте [страницу API](https://pixabay.com/api/docs/) после входа в аккаунт, скопируйте ключ и вставьте его в плитку. Для DeviantArt откройте [настройки приложений](https://www.deviantart.com/studio/apps), создайте личное приложение типа **Confidential**, скопируйте **Client ID** и **Client Secret** в соответствующие поля и сохраните. Пароль аккаунта WallWave не требуется; токены просмотра обновляются автоматически. [Документация доступа DeviantArt](https://deviantart.readme.io/docs/authentication).
+
+Pixabay используется по кнопке: его [правила API](https://pixabay.com/api/docs/) требуют кеширования ответов на сутки и ограничивают автоматические запросы и массовое скачивание. Обычный доступ API может предоставлять изображения до 1280 пикселей; более высокое разрешение используется, если оно доступно аккаунту.
+
+**Вкусы общие для всей библиотеки.** Например, оценки пейзажей с DeviantArt помогают отбирать похожие изображения с Wallhaven и Konachan. Теги понравившихся работ дополняют поисковые запросы подключённых площадок. Каждая площадка выполняет собственный поиск и предоставляет файл, а при включённом ИИ локальный **CLIP** проверяет визуальное соответствие предпочтениям перед скачиванием оригинала. Ручные интересы и исключения сохраняются; их не нужно вводить заново. Для надёжного отсеивания ИИ по-прежнему нужны положительные и отрицательные примеры.
+
+Новые площадки после обновления **отключены по умолчанию**. Уже включённые источники и сохранённые данные доступа сохраняются. Теги с пробелами, запятыми и кавычками автоматически передаются в Wallhaven корректно; пробелы и подчёркивания учитываются при сопоставлении исключений между площадками.
 
 ### 🧹 Очистка библиотеки
 
@@ -182,7 +203,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.18/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.18). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.19/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.19). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -197,7 +218,7 @@ For later launches, open `WallWave.exe` inside the chosen **WallWave** folder. T
 
 | Feature | What it does |
 | --- | --- |
-| **Interest-based discovery** | Tags and ratings guide selection from Wallhaven, Bing, NASA Images, Wikimedia Commons, local folders and compatible HTTPS JSON feeds. |
+| **Interest-based discovery** | Tags and ratings guide selection from Wallhaven, DeviantArt, Pixabay, Konachan, Bing, NASA Images, Wikimedia Commons, local folders and compatible HTTPS JSON feeds. |
 | **Rated local library** | Keep favorites, neutral and deferred images in separate views; duplicate images are filtered during downloads. |
 | **Automatic downloading and rotation** | Choose intervals and schedules; background tasks account for idle time and system load. |
 | **Multiple monitors** | Configure rotation, content categories and framing for individual screens. |
@@ -213,6 +234,27 @@ Cards show the **image source**. The more-actions menu contains details and the 
 Quote tag names that contain commas: `"tag, with comma", nature`. Clicking a card tag adds its whole name; right-clicking controls exclusion.
 
 Disabling a source hides its unreviewed images. Removing it clears those library copies; rated images and personal source files are preserved.
+
+### 🌐 Sources and a shared taste profile
+
+**Sources** shows a tile for each platform, with a description, toggle, access status and setup controls. **Paste from clipboard** fills a field; select **Save** to apply it, then enable the source. The same section is available in Settings.
+
+| Source | Access | Mode |
+| --- | --- | --- |
+| **Wallhaven** | A key is required for NSFW; optional for SFW | Manual and background discovery |
+| **DeviantArt** | Personal Client ID and Client Secret | Manual and background discovery; downloadable works only |
+| **Pixabay** | Personal API key | Manual searches, SafeSearch, 24-hour response cache |
+| **Konachan** | No key | Manual and background discovery, respecting SFW / Sketchy / NSFW |
+| **Bing, NASA Images, Wikimedia Commons** | No key | Manual and background discovery |
+| **Local folders** | A folder containing pictures | Personal originals are preserved |
+
+**Getting access:** sign in to Pixabay and copy the key from its [API page](https://pixabay.com/api/docs/). For DeviantArt, open [application settings](https://www.deviantart.com/studio/apps), register a personal **Confidential** application, and save its **Client ID** and **Client Secret** in the corresponding fields. No account password is needed; browse tokens renew automatically. See [DeviantArt authentication](https://deviantart.readme.io/docs/authentication).
+
+Pixabay stays manual because its [API policy](https://pixabay.com/api/docs/) requires a 24-hour response cache and restricts automated queries and systematic downloads. Standard access may supply images up to 1280 pixels; higher resolution is used when the API makes it available to the account.
+
+**Ratings apply across the whole library.** Liking landscapes on DeviantArt helps find similar images on Wallhaven and Konachan. Tags of liked works supplement each platform’s search queries. Source adapters search and supply files; when AI is enabled, local **CLIP** screens visual suitability before original downloads. Saved interests and exclusions remain intact. Reliable rejection still requires both positive and negative examples.
+
+New sources are **disabled by default** after updating. Existing source settings and credentials remain. Saved Wallhaven tags with spaces, commas and quotes work automatically; exclusion matching also accounts for spaces and underscores across platforms.
 
 ### 🧹 Library cleanup
 

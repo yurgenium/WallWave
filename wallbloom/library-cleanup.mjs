@@ -1,3 +1,4 @@
+import {tagIdentity} from './public/tag-input.js';
 import {removeCached} from './library.mjs';
 
 export function protectedCacheIds(db){return new Set([db.current,...Object.values(db.monitorCurrent||{}),...(db.recentReviews||[]).slice(0,3).map(x=>x.id)].filter(Boolean));}
@@ -26,15 +27,15 @@ export function rememberReview(db,id,time=Date.now()){
 }
 
 export const tagCleanupDelay=60000;
-const tagKey=tags=>JSON.stringify([...new Set((tags||[]).map(t=>t.trim().toLowerCase()).filter(Boolean))].sort());
-export function matchesExcludedTags(item,tags){const excluded=new Set(JSON.parse(tagKey(tags)));return (item.tags||[]).some(t=>excluded.has(t.trim().toLowerCase()));}
+const tagKey=tags=>JSON.stringify([...new Set((tags||[]).map(tagIdentity).filter(Boolean))].sort());
+export function matchesExcludedTags(item,tags){const excluded=new Set(JSON.parse(tagKey(tags)));return (item.tags||[]).some(t=>excluded.has(tagIdentity(t)));}
 export function cleanupCandidates(db,scope){
  if(scope.kind==='provider'){
   const provider=db.providers.find(p=>p.id===scope.providerId);
   if(!provider||provider.enabled)throw Error('cleanupSourceEnabled');
  }else if(scope.kind!=='tags')throw Error('invalidRequest');
  const excluded=new Set(JSON.parse(tagKey(db.settings.excludedTags)));
- return db.items.filter(x=>(!x.cleanupRemoved||x.downloaded||x.hasOriginal)&&(scope.kind==='provider'?x.provider===scope.providerId:(x.tags||[]).some(t=>excluded.has(t.trim().toLowerCase()))));
+ return db.items.filter(x=>(!x.cleanupRemoved||x.downloaded||x.hasOriginal)&&(scope.kind==='provider'?x.provider===scope.providerId:(x.tags||[]).some(t=>excluded.has(tagIdentity(t)))));
 }
 export function syncTagCleanup(db,now=Date.now()){
  const key=tagKey(db.settings.excludedTags),count=cleanupCandidates(db,{kind:'tags'}).length;

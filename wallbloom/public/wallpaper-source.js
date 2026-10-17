@@ -5,7 +5,7 @@ export function wallpaperSource(item,providers=[],language='ru'){
  const provider=providers.find(p=>p.id===item.provider),name=clean(provider?.name||item.providerName);
  if((provider?.type||item.sourceType)==='local'&&['Local','Local folder','Локальная папка',''].includes(name))return local;
  if(name)return name;
- const known={wallhaven:'Wallhaven',bing:'Bing',nasa:'NASA Images',commons:'Wikimedia Commons',local};
+ const known={deviantart:'DeviantArt',pixabay:'Pixabay',konachan:'Konachan',wallhaven:'Wallhaven',bing:'Bing',nasa:'NASA Images',commons:'Wikimedia Commons',local};
  if(Object.hasOwn(known,item.provider))return known[item.provider];
  for(const value of [item.source,item.url])try{const url=new URL(value);if(['https:','http:'].includes(url.protocol)&&url.hostname)return url.hostname.replace(/^www\./i,'');}catch{}
  return unknown;

@@ -1,4 +1,5 @@
 import {allowed,score} from './core.mjs';
+import {automaticSource} from './art-providers.mjs';
 
 export function visibleSettings(db){return db.workMode?{...db.settings,purity:'100',preset:'safe'}:db.settings;}
 export function eligible(db,settings=visibleSettings(db)){
@@ -31,6 +32,7 @@ export function confirmShows(db,guard,now=Date.now()){
 export function automationState(db,guard,{job,nextRetry,lastError,aiRequested},now=Date.now()){
  const one=(enabled,due)=>({code:!enabled?'automationOff':db.paused?'pausedByUser':lastError&&nextRetry>now?'sourceRetry':job?'automationBusy':guard.code==='idle'?'scheduled':guard.code==='active'?'waitIdle':guard.code,nextAt:enabled?Math.max(due,nextRetry||0):null});
  const pending=db.items.filter(x=>x.downloaded&&!x.vote&&(!db.providers||db.providers.some(p=>p.id===x.provider&&p.enabled))).length,stale=staleItems(db).length,refresh=one(db.settings.autoRefresh,db.lastRefresh+(pending<db.settings.pendingTarget||stale?Math.min(db.settings.refreshMinutes,5):db.settings.refreshMinutes)*60000);if(refresh.code==='scheduled'&&db.lastRefreshOutcome==='sourceEmpty')refresh.code='sourceEmpty';
+ if(db.settings.autoRefresh&&db.providers?.some(p=>p.enabled)&&!db.providers.some(automaticSource)){refresh.code='manualSourcesOnly';refresh.nextAt=null;}
  if(refresh.code==='scheduled'&&db.lastRefreshOutcome==='poolReady')refresh.code='poolReady';
  const analysis=one(db.settings.ai!=='off'||aiRequested,now);if(db.settings.ai!=='off'&&!aiRequested&&!db.items.some(x=>x.downloaded&&!x.embedding&&x.vote!=='ban'&&allowed(x,db.settings))){analysis.code='nothingToAnalyze';analysis.nextAt=null;}
  const rules=Object.values(db.settings.monitors||{}),rotationEnabled=db.settings.rotation||rules.some(x=>x.rotation)||db.settings.changeOnStartup||db.settings.changeOnWake||db.settings.changeAfterFullscreen||db.settings.schedule.length>0;

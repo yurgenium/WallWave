@@ -8,6 +8,8 @@ import {embeddingVersion,validEmbedding,tasteProfile,tasteSignature,assessTaste}
 import {fileURLToPath} from 'node:url';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {defaults,validate,allowed,score,sharpModule,AppError,errorCode} from './core.mjs';
+import {automaticSource} from './art-providers.mjs';
+import {tasteSearchTags} from './search-profile.mjs';
 import {initialProviders,validateProvider,searchProvider,enrich,searchCursor} from './providers.mjs';
 import {resourceAvailability} from './resources.mjs';
 import {fetchBytes} from './network.mjs';
@@ -19,7 +21,7 @@ import {exportLibrary,restoreLibrary} from './archive.mjs';
 import {validateFrame,frameSource,effectiveFrame,renderFrame,renderDesktop,renderedName,pruneRendered} from './framing.mjs';
 const root=path.dirname(fileURLToPath(import.meta.url)),dir=path.resolve(process.env.WALLBLOOM_DATA_DIR||path.join(root,'data'));
 await initLibrary(dir);let db,keys;let desktop=await desktopInfo().catch(()=>null);let backup;async function read(file,fallback){return readPersistent(path.join(dir,file),fallback);}
-db=await read('state.json',{settings:{...defaults,...desktop&&{width:desktop.width,height:desktop.height}},providers:initialProviders,items:[],pages:{},current:null,lastRefresh:0,lastRotation:0});for(const p of initialProviders.filter(p=>['bing','nasa','commons'].includes(p.type)))if(!db.providers.some(x=>x.id===p.id||x.type===p.type))db.providers.push({...p});db.settings=validate(db.settings);db.paused=db.paused===true;keys=await read('credentials.json',{});backup=await read('desktop-before-wallbloom.json',null);
+db=await read('state.json',{settings:{...defaults,...desktop&&{width:desktop.width,height:desktop.height}},providers:initialProviders,items:[],pages:{},current:null,lastRefresh:0,lastRotation:0});for(const p of initialProviders.filter(p=>!['wallhaven','local'].includes(p.type)))if(!db.providers.some(x=>x.id===p.id||x.type===p.type))db.providers.push({...p});for(const p of db.providers)for(const flag of ['apiKey','clearKey','remove','hasKey'])delete p[flag];db.settings=validate(db.settings);db.paused=db.paused===true;keys=await read('credentials.json',{});backup=await read('desktop-before-wallbloom.json',null);
 // Repair a cache/state mismatch after an interrupted operation without deleting files.
 for(const x of db.items){if(!x.downloaded)continue;try{await fs.access(imagePath(dir,x));}catch{let found=false;for(const folder of ['pending','liked','disliked','blocked']){try{const candidate=path.join(dir,folder,x.id+'.jpg');await fs.access(candidate);await fs.rename(candidate,imagePath(dir,x));found=true;break;}catch{}}x.downloaded=found;}}
 db.monitorCurrent??={};db.monitorLastRotation??={};db.rotationTriggers=[];db.exposures={};db.workMode=db.workMode===true;
@@ -49,7 +51,7 @@ let libraryWrites=Promise.resolve();function mutateLibrary(fn){const task=librar
 let writes=Promise.resolve();function save(){const snapshot=structuredClone(db);writes=writes.catch(()=>{}).then(async()=>{await persist(path.join(dir,'state.json'),snapshot);await writeIndexes(dir,snapshot.items);});return writes;}
 let aiSession=null,profileCache=null;
 let job=null,controller=null,events=[],providerStatus={},used=await usage(dir),guard={code:'checking',idle:0},nextRetry=0,mutating=false,aiRequested=false,lastError=null,activeTask=Promise.resolve(),shuttingDown=false;
-const errorEvents=new Set(['networkError','timeout','sourceUnavailable','rateLimited','diskLimit','itemLimit','invalidFeed','invalidImage','downloadFailed','aiUnavailable','saveFailed','operationFailed','apiKeyRequired','guardUnavailable','invalidArchive','monitorDisconnected']);
+const errorEvents=new Set(['networkError','timeout','sourceUnavailable','rateLimited','diskLimit','itemLimit','invalidFeed','invalidImage','downloadFailed','aiUnavailable','saveFailed','operationFailed','apiKeyRequired','guardUnavailable','invalidArchive','monitorDisconnected','sourceAuthFailed']);
 function event(code,detail={}){const entry={time:Date.now(),code,...detail};events.unshift(entry);events=events.slice(0,60);if(errorEvents.has(code))lastError={code,time:entry.time};}
 function desktopState(){return {settings:db.settings,job:db.workMode&&job?{...job,item:''}:job,aiRequested,guard,paused:db.paused,lastError,workMode:db.workMode,current:db.current,shortcutStatus,token};}
 // Cleared copies retain private metadata for duplicate prevention, not gallery cards.
@@ -68,7 +70,7 @@ async function refresh(signal){
  const needed=pendingCapacity(db);
  if(needed===0){db.lastRefresh=Date.now();db.lastRefreshOutcome='poolReady';event('poolReady');return;}
  await updateDownloadScreens();
- const enabled=db.providers.filter(p=>p.enabled);
+ const available=p=>p.enabled&&(!job.automatic||automaticSource(p)),enabled=db.providers.filter(available);
  if(!enabled.length)throw new AppError('noSources');
  const target=Math.min(db.settings.batch,needed),attempted=new Set();
  const maxAttempts=Math.max(96,target*32),maxPages=32;
@@ -81,7 +83,7 @@ async function refresh(signal){
    if(!room())break;
    signal.throwIfAborted();
    if(job.automatic&&guard.code!=='idle')throw new AppError('waitIdle');
-   if(attempted.has(x.id)||!db.providers.some(p=>p.id===x.provider&&p.enabled))continue;
+   if(attempted.has(x.id)||!db.providers.some(p=>p.id===x.provider&&available(p)))continue;
    if(attempted.size>=maxAttempts){stopReason='searchLimited';break;}
    attempted.add(x.id);x.vote??=null;
    if(!db.items.some(y=>y.id===x.id))db.items.push(x);
@@ -97,10 +99,10 @@ async function refresh(signal){
  await consume(db.items.filter(x=>!screenedOut(x)&&!x.downloaded&&!['ban','dislike'].includes(x.vote)&&allowed(x,db.settings)));
  db.searchState??={};db.pages??={};
  const sources=enabled.map(p=>{
-  const settings={...db.settings,tags:Math.random()<db.settings.diversity/100?[]:db.settings.tags};
+  const settings={...db.settings,tags:Math.random()<db.settings.diversity/100?[]:tasteSearchTags(db)};
   const signature=JSON.stringify([p.type,p.url,p.folder,p.rating,settings.tags,settings.excludedTags,settings.purity,settings.period,settings.language]);
   const cursor=searchCursor(db.searchState,p.id,signature,settings.tags.length?'interests':'discovery');
-  return {p,settings,cursor,page:cursor.page+1,paged:['wallhaven','nasa','commons','local'].includes(p.type),seenPages:new Set(),empty:0,wrapped:false,done:false,count:0};
+  return {p,settings,cursor,page:cursor.page+1,paged:['wallhaven','nasa','commons','local','deviantart','konachan'].includes(p.type),seenPages:new Set(),empty:0,wrapped:false,done:false,count:0};
  });
  for(let round=0;room()&&sources.some(s=>!s.done)&&round<maxPages;round++){
   const pages=[],candidates=[],queued=new Set();
@@ -112,14 +114,14 @@ async function refresh(signal){
    s.seenPages.add(s.page);
    providerStatus[s.p.id]={code:'searching',time:Date.now()};
    try{
-    const list=await searchProvider(s.p,s.settings,keys[s.p.id],signal,s.page);
+    const list=await searchProvider(s.p,s.settings,keys[s.p.id],signal,s.page,{dir});
     const known=new Set(db.items.map(x=>x.id));
     const fresh=list.filter(x=>!known.has(x.id)&&!skipDownload(x)&&!attempted.has(x.id)&&!queued.has(x.id)&&allowed(x,db.settings)&&orientationAllowed(x));
     for(const x of fresh){queued.add(x.id);candidates.push(x);}
     s.count+=fresh.length;
     providerStatus[s.p.id]={code:s.count?'found':'noNew',count:s.count,time:Date.now(),periodSupported:s.p.type==='wallhaven'};
     event(fresh.length?'found':'noNew',{provider:s.p.name,count:fresh.length});
-    pages.push({s,page:s.page,fresh});
+    pages.push({s,page:s.page,fresh,hasResults:!!(list.length||list.hasMore)});
     if(!s.paged)s.done=true;
     if(list.length||list.hasMore)s.empty=0;else s.empty++;
     const emptyLimit=s.p.type==='wallhaven'?Math.max(1,s.settings.tags.length):1;
@@ -135,9 +137,10 @@ async function refresh(signal){
    }
   }
   await consume(rankCandidates(candidates,db));
-  for(const {s,page,fresh} of pages){
+  for(const {s,page,fresh,hasResults} of pages){
    // Do not lose the rest of a page when the requested batch is already full.
    if(fresh.some(x=>!attempted.has(x.id)))s.cursor.page=page-1;
+   else if(s.p.type==='pixabay')s.cursor.page=hasResults?page:0;
    else if(!s.done&&!s.wrapped)s.cursor.page=page;
    else if(s.wrapped&&s.page!==1&&!s.done)s.cursor.page=page;
    db.pages[s.p.id]=s.cursor.page;
@@ -222,7 +225,7 @@ function tick(){
  const cleanup=dueCleanupCandidates(db);if(cleanup.length||rejectedCleanupCandidates(db).length){start('cleanup',()=>cleanupCopies(cleanup,true),true);return;}
  const due=db.rotationTriggers.length>0||db.settings.rotation&&Date.now()-db.lastRotation>db.settings.rotationMinutes*60000||monitors.some(m=>{const s=monitorSettings(m.id);return s.rotation&&Date.now()-(db.monitorLastRotation[m.id]||0)>s.rotationMinutes*60000;});
  if(due&&!db.workMode&&['active','idle'].includes(guard.code)){const triggered=db.rotationTriggers.length>0;db.rotationTriggers=[];start('apply',()=>rotate(triggered));return;}
- if(guard.code!=='idle')return;if(db.items.some(x=>x.downloaded&&!x.visualHash&&!x.fingerprintError)){start('index',indexCached,true);return;}if(aiRequested){aiRequested=false;start('ai',ai);}else if(db.settings.autoRefresh&&Date.now()-db.lastRefresh>(db.items.filter(x=>x.downloaded&&!x.vote&&db.providers.some(p=>p.id===x.provider&&p.enabled)).length<db.settings.pendingTarget||staleItems(db).length?Math.min(db.settings.refreshMinutes,5):db.settings.refreshMinutes)*60000){start('refresh',refresh,true);}else if(db.settings.ai!=='off'&&db.items.some(x=>x.downloaded&&(!validEmbedding(x.embedding)||x.embeddingVersion!==embeddingVersion)&&x.vote!=='ban'&&allowed(x,db.settings)))start('ai',ai);}
+ if(guard.code!=='idle')return;if(db.items.some(x=>x.downloaded&&!x.visualHash&&!x.fingerprintError)){start('index',indexCached,true);return;}if(aiRequested){aiRequested=false;start('ai',ai);}else if(db.settings.autoRefresh&&db.providers.some(automaticSource)&&Date.now()-db.lastRefresh>(db.items.filter(x=>x.downloaded&&!x.vote&&db.providers.some(p=>p.id===x.provider&&p.enabled)).length<db.settings.pendingTarget||staleItems(db).length?Math.min(db.settings.refreshMinutes,5):db.settings.refreshMinutes)*60000){start('refresh',refresh,true);}else if(db.settings.ai!=='off'&&db.items.some(x=>x.downloaded&&(!validEmbedding(x.embedding)||x.embeddingVersion!==embeddingVersion)&&x.vote!=='ban'&&allowed(x,db.settings)))start('ai',ai);}
 setInterval(tick,15000).unref();
 for(const x of db.items)if(!db.providers.some(p=>p.id===x.provider)&&x.localSource)x.sourceType='local';
 for(const id of new Set(db.items.map(x=>x.provider).filter(id=>id&&!db.providers.some(p=>p.id===id))))await removeProviderCopies(dir,db,id);
@@ -241,7 +244,7 @@ const server=http.createServer(async(req,res)=>{let ownsMutation=false;try{
  if(url==='/api/cleanup-preview'){try{const preview=cleanupConfirmations.prepare(db,b,randomUUID());send(res,200,preview);return;}catch(e){throw new AppError(e.message);}}
  else if(url==='/api/cleanup'){if(job)throw new AppError('busy');let items;try{items=cleanupConfirmations.consume(db,b.ticket);}catch(e){throw new AppError(e.message);}const result=await cleanupCopies(items);send(res,200,result);return;}
  else if(url==='/api/settings'){db.settings=validate(b);syncCleanups();if(db.settings.ai==='off')aiRequested=false;db.pages={};await save();}
- else if(url==='/api/provider'){const existing=db.providers.find(p=>p.id===b.id);if(existing){for(const x of db.items.filter(x=>x.provider===existing.id)){x.providerName=existing.name;x.sourceType=existing.type;}if((b.remove||b.enabled===false)&&job?.provider===existing.id)controller?.abort();}if(b.remove){if(existing){await mutateLibrary(()=>removeProviderCopies(dir,db,existing.id));db.providers=db.providers.filter(p=>p.id!==existing.id);}delete keys[b.id];}else{const p=validateProvider({...existing,...b,id:existing?.id||randomUUID().replaceAll('-','')});delete p.apiKey;delete p.remove;if(!['safe','suggestive','adult'].includes(p.rating||'safe'))throw new AppError('invalidProvider');if(existing)Object.assign(existing,p);else db.providers.push(p);if(typeof b.apiKey==='string'&&b.apiKey.trim())keys[p.id]=b.apiKey.trim();if(b.clearKey)delete keys[p.id];}await persist(path.join(dir,'credentials.json'),keys);await save();}
+ else if(url==='/api/provider'){const existing=db.providers.find(p=>p.id===b.id);if(existing){for(const x of db.items.filter(x=>x.provider===existing.id)){x.providerName=existing.name;x.sourceType=existing.type;}if((b.remove||b.enabled===false)&&job?.provider===existing.id)controller?.abort();}if(b.remove){if(existing){await mutateLibrary(()=>removeProviderCopies(dir,db,existing.id));db.providers=db.providers.filter(p=>p.id!==existing.id);}delete keys[b.id];}else{const p=validateProvider({...existing,...b,id:existing?.id||randomUUID().replaceAll('-','')});delete p.apiKey;delete p.remove;delete p.clearKey;delete p.hasKey;if(!['safe','suggestive','adult'].includes(p.rating||'safe'))throw new AppError('invalidProvider');if(existing)Object.assign(existing,p);else db.providers.push(p);if(typeof b.apiKey==='string'&&b.apiKey.trim()){if(keys[p.id]!==b.apiKey.trim())delete db.searchState?.[p.id];keys[p.id]=b.apiKey.trim();}if(b.clearKey){delete keys[p.id];delete db.searchState?.[p.id];}}await persist(path.join(dir,'credentials.json'),keys);await save();}
  else if(url==='/api/refresh')start('refresh',refresh);
  else if(url==='/api/retry-pending')start('download',async signal=>{await updateDownloadScreens();const items=db.items.filter(x=>!screenedOut(x)&&!x.downloaded&&!['dislike','ban'].includes(x.vote)&&allowed(x,db.settings)&&db.providers.some(p=>p.id===x.provider&&p.enabled));job.total=items.length;for(const x of items){signal.throwIfAborted();if(pendingCapacity(db)===0)break;await download(x,signal);job.done++;}});
  else if(url==='/api/ai'){if(db.settings.ai==='off')throw new AppError('aiOff');aiRequested=true;event('aiQueued');}
@@ -258,7 +261,7 @@ const server=http.createServer(async(req,res)=>{let ownsMutation=false;try{
  if(req.method!=='GET'){send(res,405,{error:'invalidRequest'});return;}
  if(url.startsWith('/full-preview/')){if(req.headers['sec-fetch-site']==='cross-site')throw new AppError('invalidRequest');const id=decodeURIComponent(url.slice(14)),x=db.items.find(x=>x.id===id&&x.downloaded&&libraryVisible(x));if(!x)throw new AppError('notAvailable');const file=await frameSource(dir,x),sharp=await sharpModule(),meta=await sharp(file,{limitInputPixels:64000000,animated:false}).metadata(),mime={jpeg:'image/jpeg',png:'image/png',webp:'image/webp',avif:'image/avif'}[meta.format];if(!mime)throw new AppError('invalidImage');res.writeHead(200,{'Content-Type':mime,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(await fs.readFile(file));return;}
  if(url.startsWith('/frame-preview/')){if(req.headers['sec-fetch-site']==='cross-site')throw new AppError('invalidRequest');const id=decodeURIComponent(url.slice(15)),x=db.items.find(x=>x.id===id);if(!x?.downloaded||!libraryVisible(x)||['ban','dislike'].includes(x.vote))throw new AppError('notAvailable');const monitorId=u.searchParams.get('monitorId')||'',screen=monitors.find(m=>m.id===monitorId);if(monitorId&&!screen)throw new AppError('monitorDisconnected');const frame=validateFrame({fit:u.searchParams.get('fit')||'cover',x:Number(u.searchParams.get('x')??.5),y:Number(u.searchParams.get('y')??.5),flip:u.searchParams.get('flip')==='true'});const width=screen?.width||db.settings.width,height=screen?.height||db.settings.height,scale=Math.min(1,960/width,640/height),bytes=await renderFrame(await frameSource(dir,x),Math.max(1,Math.round(width*scale)),Math.max(1,Math.round(height*scale)),frame,85);res.writeHead(200,{'Content-Type':'image/jpeg','Cache-Control':'no-store'});res.end(bytes);return;}
- let file;if(url.startsWith('/image/')){const id=url.slice(7);const x=db.items.find(x=>x.id===id&&x.downloaded&&libraryVisible(x));if(!x){send(res,404,{error:'notFound'});return;}file=path.join(dir,'thumbnails',x.id+'.jpg');if(x.thumbnailVersion!==2){const sharp=await sharpModule();const bytes=await sharp(await frameSource(dir,x)).rotate().resize(1280,800,{fit:'inside',withoutEnlargement:true}).jpeg({quality:92}).toBuffer();await fs.writeFile(file,bytes);x.thumbnailVersion=2;}res.setHeader('Content-Type','image/jpeg');}else{const files={'/app-icon.svg':'app-icon.svg','/':'index.html','/app.js':'app.js','/style.css':'style.css','/i18n.js':'i18n.js','/frame-editor.js':'frame-editor.js','/provider-catalog.js':'provider-catalog.js','/wallpaper-source.js':'wallpaper-source.js','/review-state.js':'review-state.js','/tag-input.js':'tag-input.js','/tag-editor.js':'tag-editor.js','/show-cleanup.js':'show-cleanup.js','/cleanup-dialog.js':'cleanup-dialog.js','/shortcut-input.js':'shortcut-input.js','/redesign.js':'redesign.js','/redesign.css':'redesign.css'};if(!files[url]){send(res,404,{error:'notFound'});return;}file=path.join(root,'public',files[url]);res.setHeader('Content-Type',url.endsWith('.js')?'text/javascript; charset=utf-8':url.endsWith('.css')?'text/css':url.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8');}res.setHeader('Cache-Control','no-store');res.end(await fs.readFile(file));
+ let file;if(url.startsWith('/image/')){const id=url.slice(7);const x=db.items.find(x=>x.id===id&&x.downloaded&&libraryVisible(x));if(!x){send(res,404,{error:'notFound'});return;}file=path.join(dir,'thumbnails',x.id+'.jpg');if(x.thumbnailVersion!==2){const sharp=await sharpModule();const bytes=await sharp(await frameSource(dir,x)).rotate().resize(1280,800,{fit:'inside',withoutEnlargement:true}).jpeg({quality:92}).toBuffer();await fs.writeFile(file,bytes);x.thumbnailVersion=2;}res.setHeader('Content-Type','image/jpeg');}else{const files={'/source-tiles.js':'source-tiles.js','/source-tiles.css':'source-tiles.css','/app-icon.svg':'app-icon.svg','/':'index.html','/app.js':'app.js','/style.css':'style.css','/i18n.js':'i18n.js','/frame-editor.js':'frame-editor.js','/provider-catalog.js':'provider-catalog.js','/wallpaper-source.js':'wallpaper-source.js','/review-state.js':'review-state.js','/tag-input.js':'tag-input.js','/tag-editor.js':'tag-editor.js','/show-cleanup.js':'show-cleanup.js','/cleanup-dialog.js':'cleanup-dialog.js','/shortcut-input.js':'shortcut-input.js','/redesign.js':'redesign.js','/redesign.css':'redesign.css'};if(!files[url]){send(res,404,{error:'notFound'});return;}file=path.join(root,'public',files[url]);res.setHeader('Content-Type',url.endsWith('.js')?'text/javascript; charset=utf-8':url.endsWith('.css')?'text/css':url.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8');}res.setHeader('Cache-Control','no-store');res.end(await fs.readFile(file));
  }catch(e){send(res,e.code==='ENOENT'?404:400,{error:e instanceof AppError?e.code:'operationFailed'});}finally{if(ownsMutation)mutating=false;}});
 server.listen(port,'127.0.0.1',()=>{host=`127.0.0.1:${server.address().port}`;console.log(`WallWave: http://${host}`);process.send?.({type:'ready',port:server.address().port});});
 async function shutdown(){if(shuttingDown)return;shuttingDown=true;controller?.abort();aiRequested=false;await activeTask;await save();server.close(()=>process.exit(0));server.closeAllConnections();setTimeout(()=>process.exit(0),3000).unref();}

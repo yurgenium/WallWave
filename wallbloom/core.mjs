@@ -1,5 +1,5 @@
 import {defaultCleanupRules,cleanupRulesError} from './public/show-cleanup.js';
-import {tagListError} from './public/tag-input.js';
+import {tagListError,tagIdentity} from './public/tag-input.js';
 export const defaultFrame={fit:'cover',x:.5,y:.5,flip:false};
 export function validateFrame(input={}){if(!input||typeof input!=='object'||Array.isArray(input))throw new AppError('invalidFrame');const f={...defaultFrame,...input};if(!['cover','contain'].includes(f.fit)||typeof f.flip!=='boolean'||!['x','y'].every(k=>typeof f[k]==='number'&&Number.isFinite(f[k])&&f[k]>=0&&f[k]<=1))throw new AppError('invalidFrame');return {fit:f.fit,x:f.x,y:f.y,flip:f.flip};}
 export const defaults={language:'ru',previewLayout:'arrows',preset:'safe',tags:['nature','space'],excludedTags:[],period:'1M',width:1920,height:1080,fit:'contain',quality:88,maxItemMB:30,maxTotalGB:5,batch:12,autoRefresh:false,refreshMinutes:60,rotation:false,rotationMinutes:60,ai:'off',aiFilter:'cautious',pauseProcesses:['obs64','blender'],retireAfter:3,cleanupAfterShows:defaultCleanupRules(),pendingTarget:30,diversity:25,pauseOnBattery:true,changeOnStartup:false,changeOnWake:false,changeAfterFullscreen:false,schedule:[],monitors:{},shortcuts:{next:'',like:'',ban:'',work:''},frame:defaultFrame};
@@ -22,9 +22,9 @@ export function validate(input){const s={...defaults,...input};
  const purity=contentMask(s);if((s.purity!==undefined&&typeof s.purity!=='string')||!/^[01]{3}$/.test(purity)||purity==='000')throw new AppError('invalidSettings');
  return {...Object.fromEntries(Object.keys(defaults).map(k=>[k,s[k]])),frame:validateFrame(s.frame),monitors,shortcuts,schedule:[...new Set(s.schedule)],purity,preset:purity[2]==='1'?'adult':purity[1]==='1'?'suggestive':'safe'};
 }
-export function allowed(item,s){const index=['safe','suggestive','adult'].indexOf(item.rating);return index>=0&&contentMask(s)[index]==='1'&&!s.excludedTags.some(t=>item.tags.some(v=>v.toLowerCase()===t.toLowerCase()));}
+export function allowed(item,s){const index=['safe','suggestive','adult'].indexOf(item.rating);return index>=0&&contentMask(s)[index]==='1'&&!s.excludedTags.some(t=>item.tags.some(v=>tagIdentity(v)===tagIdentity(t)));}
 export function cosine(a,b){if(!a||!b||a.length!==b.length)return 0;let d=0,aa=0,bb=0;for(let i=0;i<a.length;i++){d+=a[i]*b[i];aa+=a[i]*a[i];bb+=b[i]*b[i];}return d/Math.sqrt(aa*bb)||0;}
-export function score(x,items,s){let n=x.tags.filter(t=>s.tags.some(v=>v.toLowerCase()===t.toLowerCase())).length*2;
+export function score(x,items,s){let n=x.tags.filter(t=>s.tags.some(v=>tagIdentity(v)===tagIdentity(t))).length*2;
  for(const y of items){const vote=y.vote==='like'?1:y.vote==='dislike'?-1:0;if(!vote)continue;n+=vote*x.tags.filter(t=>y.tags.includes(t)).length;n+=vote*(x.embedding&&y.embedding?cosine(x.embedding,y.embedding)*2:cosine(x.colors,y.colors));}return n;
 }
 export async function sharpModule(){return (await import('sharp')).default;}
