@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.19/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.19 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.20/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.5.20 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.19/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.19) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.20/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.20) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -75,7 +75,7 @@
 | **Bing, NASA Images, Wikimedia Commons** | Ключ не требуется | Ручной и фоновый подбор |
 | **Локальные папки** | Путь к папке с изображениями | Личные оригиналы сохраняются |
 
-**Как получить доступ:** для Pixabay откройте [страницу API](https://pixabay.com/api/docs/) после входа в аккаунт, скопируйте ключ и вставьте его в плитку. Для DeviantArt откройте [настройки приложений](https://www.deviantart.com/studio/apps), создайте личное приложение типа **Confidential**, скопируйте **Client ID** и **Client Secret** в соответствующие поля и сохраните. Пароль аккаунта WallWave не требуется; токены просмотра обновляются автоматически. [Документация доступа DeviantArt](https://deviantart.readme.io/docs/authentication).
+**Как получить доступ:** для Pixabay откройте [страницу API](https://pixabay.com/api/docs/) после входа в аккаунт, скопируйте ключ и вставьте его в плитку. Для DeviantArt откройте [настройки приложений](https://www.deviantart.com/studio/apps), создайте личное приложение типа **Confidential**. В поле **OAuth2 Redirect URI Whitelist** укажите `http://localhost/`. После сохранения вернитесь на страницу списка приложений: там доступны **Client ID** и **Client Secret**. Перенесите их в соответствующие поля WallWave кнопками вставки или сочетанием **Ctrl+V** и нажмите **«Сохранить»**. Пароль аккаунта WallWave не требуется; токены просмотра обновляются автоматически. [Документация доступа DeviantArt](https://deviantart.readme.io/docs/authentication).
 
 За один запуск Pixabay проверяется одна страница, до 24 кандидатов; после фильтрации результат может быть меньше выбранной порции. Pixabay используется по кнопке: его [правила API](https://pixabay.com/api/docs/) требуют кеширования ответов на сутки и ограничивают автоматические запросы и массовое скачивание. Обычный доступ API может предоставлять изображения до 1280 пикселей; более высокое разрешение используется, если оно доступно аккаунту.
 
@@ -203,7 +203,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.19/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.19). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.20/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.20). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -248,7 +248,7 @@ Disabling a source hides its unreviewed images. Removing it clears those library
 | **Bing, NASA Images, Wikimedia Commons** | No key | Manual and background discovery |
 | **Local folders** | A folder containing pictures | Personal originals are preserved |
 
-**Getting access:** sign in to Pixabay and copy the key from its [API page](https://pixabay.com/api/docs/). For DeviantArt, open [application settings](https://www.deviantart.com/studio/apps), register a personal **Confidential** application, and save its **Client ID** and **Client Secret** in the corresponding fields. No account password is needed; browse tokens renew automatically. See [DeviantArt authentication](https://deviantart.readme.io/docs/authentication).
+**Getting access:** sign in to Pixabay and copy the key from its [API page](https://pixabay.com/api/docs/). For DeviantArt, open [application settings](https://www.deviantart.com/studio/apps), register a personal **Confidential** application and enter `http://localhost/` in **OAuth2 Redirect URI Whitelist**. After saving, return to the application list to find **Client ID** and **Client Secret**. Paste them into the corresponding WallWave fields using the paste buttons or **Ctrl+V**, then click **Save**. No account password is needed; browse tokens renew automatically. See [DeviantArt authentication](https://deviantart.readme.io/docs/authentication).
 
 Each Pixabay run checks one page of up to 24 candidates; screening may leave fewer downloads than the requested batch. Pixabay stays manual because its [API policy](https://pixabay.com/api/docs/) requires a 24-hour response cache and restricts automated queries and systematic downloads. Standard access may supply images up to 1280 pixels; higher resolution is used when the API makes it available to the account.
 
