@@ -124,7 +124,7 @@ async function refresh(signal){
     pages.push({s,page:s.page,fresh,hasResults:!!(list.length||list.hasMore)});
     if(!s.paged)s.done=true;
     if(list.length||list.hasMore)s.empty=0;else s.empty++;
-    const emptyLimit=s.p.type==='wallhaven'?Math.max(1,s.settings.tags.length):1;
+    const emptyLimit=['wallhaven','deviantart','konachan','nasa','commons'].includes(s.p.type)?Math.max(1,s.settings.tags.length):1;
     if(s.empty>=emptyLimit){
      // A saved cursor can outlive a changed catalogue: wrap during this click.
      if(!s.wrapped&&s.cursor.page>0){s.wrapped=true;s.page=1;s.empty=0;}
@@ -140,7 +140,7 @@ async function refresh(signal){
   for(const {s,page,fresh,hasResults} of pages){
    // Do not lose the rest of a page when the requested batch is already full.
    if(fresh.some(x=>!attempted.has(x.id)))s.cursor.page=page-1;
-   else if(s.p.type==='pixabay')s.cursor.page=hasResults?page:0;
+   else if(s.p.type==='pixabay')s.cursor.page=hasResults||s.settings.tags.length>1&&page%s.settings.tags.length!==0?page:0;
    else if(!s.done&&!s.wrapped)s.cursor.page=page;
    else if(s.wrapped&&s.page!==1&&!s.done)s.cursor.page=page;
    db.pages[s.p.id]=s.cursor.page;

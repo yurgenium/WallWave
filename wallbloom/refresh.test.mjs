@@ -9,12 +9,12 @@ import {searchProvider} from './providers.mjs';
 
 const picture=id=>({id,path:'https://example.com/'+id,url:'https://example.com/source',thumbs:{small:'https://example.com/'+id},purity:'sfw',dimension_x:800,dimension_y:600});
 const ratings=()=>Array.from({length:5},(_,i)=>[{id:'positive'+i,vote:'like',embeddingVersion:2,embedding:[1,0,...Array(510).fill(0)],tags:[],rating:'safe'},{id:'negative'+i,vote:'dislike',embeddingVersion:2,embedding:[0,1,...Array(510).fill(0)],tags:[],rating:'safe'}]).flat();
-async function fixture(t,config,{items=[],settings={},searchState}={}){
+async function fixture(t,config,{items=[],settings={},searchState,providers}={}){
  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-refresh-')),data=path.join(temp,'data'),file=path.join(temp,'fixture.json');await fs.mkdir(data);
  config={delay:0,...config};await fs.writeFile(file,JSON.stringify(config));
  const sharp=await sharpModule();
  for(const [id,color] of [['red','#ff3344'],['green','#33ee77'],['blue','#3344ff'],['yellow','#ffdd11']])await sharp({create:{width:800,height:600,channels:3,background:color}}).png().toFile(file+'.'+id+'.png');
- await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,ai:'off',batch:2,diversity:0,tags:['nature'],...settings},providers:[{id:'wallhaven',type:'wallhaven',name:'Wallhaven',enabled:true}],items,pages:{},searchState}));
+ await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,ai:'off',batch:2,diversity:0,tags:['nature'],...settings},providers:providers||[{id:'wallhaven',type:'wallhaven',name:'Wallhaven',enabled:true}],items,pages:{},searchState}));
  const child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href,'--import',new URL('./tools/test-download-loader.mjs',import.meta.url).href,'--import',new URL('./tools/test-ai-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_PORT:'0',WALLBLOOM_DATA_DIR:data,WALLBLOOM_NATIVE_FIXTURE:file},silent:true,windowsHide:true});
  child.stdout.resume();let errors='';child.stderr.on('data',b=>errors+=b);
  t.after(async()=>{if(child.exitCode===null){const end=new Promise(r=>child.once('exit',r));child.send({type:'shutdown'});await end;}await fs.rm(temp,{recursive:true,force:true});});
@@ -84,4 +84,10 @@ test('alternating interest and discovery searches resume their own pages',{timeo
 test('Wallhaven quota failure schedules retry instead of treating the source as empty',{timeout:20000},async t=>{
  const f=await fixture(t,{pages:{},searchError:'rateLimited',retryAfter:3600000},{settings:{autoRefresh:true}});
  const started=Date.now(),s=await f.refresh();assert.equal(s.refreshOutcome,'rateLimited');assert.equal(s.refreshDownloaded,0);assert(s.automation.refresh.nextAt>=started+3600000);assert.deepEqual(await f.searches(),[1]);
+});
+
+test('a missing Konachan tag does not stop other interests from filling the batch',{timeout:20000},async t=>{
+ const images=['good1','good2'].map((id,i)=>({id:i+1,rating:'s',tags:'nature',file_url:'https://example.com/'+id,preview_url:'https://example.com/'+id,width:800,height:600}));
+ const f=await fixture(t,{konachanPages:{nature:images},imageAliases:{good1:'red',good2:'green'}},{providers:[{id:'konachan',type:'konachan',name:'Konachan',enabled:true}],settings:{tags:['missing','nature']}});
+ const s=await f.refresh();assert.equal(s.refreshDownloaded,2);assert.equal(s.refreshOutcome,'poolUpdated');assert.deepEqual(await f.searches(),[1,1]);
 });
