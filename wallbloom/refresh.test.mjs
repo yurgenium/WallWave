@@ -10,6 +10,14 @@ import {searchProvider} from './providers.mjs';
 import {initLibrary,downloadImage,usage} from './library.mjs';
 
 const picture=id=>({id,path:'https://example.com/'+id,url:'https://example.com/source',thumbs:{small:'https://example.com/'+id},purity:'sfw',dimension_x:800,dimension_y:600});
+test('large library responses negotiate compression without caching or changing the data',async t=>{
+ const items=Array.from({length:240},(_,i)=>({id:'fixture'+i,provider:'wallhaven',title:'Test wallpaper '+i,rating:'safe',tags:['landscape','nature','mountains','forest'],width:1920,height:1080,url:'https://example.com/image/'+i}));
+ const f=await fixture(t,{}, {items});
+ const plain=await fetch(f.base+'/api/state',{headers:{'Accept-Encoding':'identity'}}),before=await plain.json();assert.equal(plain.headers.get('Content-Encoding'),null);
+ const compressed=await fetch(f.base+'/api/state',{headers:{'Accept-Encoding':'gzip'}}),after=await compressed.json();assert.equal(compressed.headers.get('Content-Encoding'),'gzip');assert.equal(compressed.headers.get('Vary'),'Accept-Encoding');assert.equal(compressed.headers.get('Cache-Control'),'no-store');assert.deepEqual(after.items,before.items);assert(Number(compressed.headers.get('Content-Length'))<Number(plain.headers.get('Content-Length'))/2);
+ const disabled=await fetch(f.base+'/api/state',{headers:{'Accept-Encoding':'gzip;q=0'}});assert.equal(disabled.headers.get('Content-Encoding'),null);assert.deepEqual((await disabled.json()).items,before.items);
+ assert((await fetch(f.base+'/state-poll.js')).ok);
+});
 const ratings=()=>Array.from({length:5},(_,i)=>[{id:'positive'+i,vote:'like',embeddingVersion:2,embedding:[1,0,...Array(510).fill(0)],tags:[],rating:'safe'},{id:'negative'+i,vote:'dislike',embeddingVersion:2,embedding:[0,1,...Array(510).fill(0)],tags:[],rating:'safe'}]).flat();
 async function fixture(t,config,{items=[],settings={},searchState,providers,providerCooldowns}={}){
  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-refresh-')),data=path.join(temp,'data'),file=path.join(temp,'fixture.json');await fs.mkdir(data);
