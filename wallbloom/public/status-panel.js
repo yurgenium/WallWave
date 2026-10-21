@@ -28,17 +28,22 @@ export function setupStatusPanel({getState,action,t,getLanguage,openHold,openHel
   const net=s.network||{},now=Date.now(),received=net.received||0;if(lastBytes===null){lastBytes=received;lastTime=now;}if(now-lastTime>=1000){lastSpeed=Math.max(0,received-lastBytes)/((now-lastTime)/1000);lastBytes=received;lastTime=now;}const active=net.active||{},source=s.providers?.find(p=>p.id===s.job?.provider)?.name||s.providers?.filter(p=>s.providerStatus?.[p.id]?.code==='searching').map(p=>p.name).join(', ');
   const lines=[t('panelTransferred')+': '+(received/1024**2).toFixed(1)+' MiB',t('panelSpeed')+': '+(lastSpeed/1024).toFixed(0)+' KiB/s',t('panelOriginal')+': '+(active.original||0),t('panelPreview')+': '+(active.preview||0),t('panelAPI')+': '+(active.api||0)];if(source)lines.push(t('panelActiveSource')+': '+source);if(s.job?.modelDownload){const m=s.job.modelDownload;lines.push(t('panelModel')+': '+(Number(m.loaded||m.bytes||0)/1024**2).toFixed(1)+(m.total?' / '+(m.total/1024**2).toFixed(1):'')+' MiB');}transferTitle.textContent=t('panelDetails');transferText.textContent=lines.join(' · ');
  }
- // Move before the pointer reaches the overlay, while the uncovered part of the card is hovered.
- let coveredCard=null,returnTimer;const reset=()=>{panel.style.setProperty('--panel-shift','0px');panel.dataset.dodged='false';coveredCard=null;};
+ // Leave the panel in place. Hide over a covered card, including its newly exposed area.
+ let hideTimer,returnTimer,keyboardFocus=false;
+ const reset=()=>{clearTimeout(hideTimer);clearTimeout(returnTimer);hideTimer=returnTimer=null;panel.dataset.autoHidden='false';};
+ const overlaps=(a,b)=>a.right>b.left&&a.left<b.right&&a.bottom>b.top&&a.top<b.bottom;
  document.addEventListener('pointermove',e=>{
-  if(e.pointerType==='touch'||panel.contains(e.target))return;
-  const card=e.target.closest?.('#grid .card');if(coveredCard===card&&card){clearTimeout(returnTimer);return;}
-  if(card&&document.body.dataset.view==='library'){
-   const r=card.getBoundingClientRect(),p=panel.getBoundingClientRect(),base=innerWidth-(innerWidth<=700?10:18)-panel.offsetWidth;
-   if(r.right>base&&r.left<base+panel.offsetWidth&&r.bottom>p.top&&r.top<p.bottom){clearTimeout(returnTimer);coveredCard=card;const x=Math.max(44-panel.offsetWidth,r.left-panel.offsetWidth-12);panel.style.setProperty('--panel-shift',(Math.min(0,x-base))+'px');panel.dataset.dodged='true';return;}
+  if(e.pointerType==='touch')return;
+  if(panel.contains(e.target)||keyboardFocus&&panel.contains(document.activeElement)){reset();return;}
+  const card=e.target.closest?.('#grid .card');
+  if(card&&document.body.dataset.view==='library'&&overlaps(card.getBoundingClientRect(),panel.getBoundingClientRect())){
+   clearTimeout(returnTimer);returnTimer=null;
+   if(panel.dataset.autoHidden!=='true'&&!hideTimer)hideTimer=setTimeout(()=>{hideTimer=null;panel.dataset.autoHidden='true';},120);
+   return;
   }
-  clearTimeout(returnTimer);returnTimer=setTimeout(()=>{if(!panel.matches(':hover')&&(!keyboardFocus||!panel.contains(document.activeElement)))reset();},900);
+  clearTimeout(hideTimer);hideTimer=null;
+  if(panel.dataset.autoHidden==='true'&&!returnTimer)returnTimer=setTimeout(()=>{returnTimer=null;reset();},220);
  });
- let keyboardFocus=false;document.addEventListener('keydown',e=>{if(e.key==='Tab')keyboardFocus=true;});document.addEventListener('pointerdown',()=>keyboardFocus=false);panel.addEventListener('focusin',()=>{clearTimeout(returnTimer);if(keyboardFocus)reset();});window.addEventListener('resize',reset);document.addEventListener('pointerleave',()=>{clearTimeout(returnTimer);reset();});
+ document.addEventListener('keydown',e=>{if(e.key==='Tab'){keyboardFocus=true;reset();}});document.addEventListener('pointerdown',()=>keyboardFocus=false);panel.addEventListener('focusin',reset);panel.addEventListener('pointerenter',reset);window.addEventListener('resize',reset);document.addEventListener('scroll',reset,true);document.addEventListener('pointerleave',reset);window.addEventListener('blur',reset);document.addEventListener('click',e=>{if(e.target.closest?.('[data-view]'))reset();});
  return {update,connection:connected=>showCritical(!connected)};
 }

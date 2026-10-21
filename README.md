@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.6.1/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.6.1 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.6.2/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.6.2 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -28,9 +28,9 @@
 
 ### 🚀 Первый запуск — от скачивания до новых обоев
 
-**Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
+**Для готового приложения не нужны навыки программирования или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.1/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.6.1) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.2/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.6.2) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -77,7 +77,7 @@
 
 ### 🎛️ Плавающая панель
 
-В свёрнутом виде панель показывает текущий статус. Раскройте её стрелкой, чтобы увидеть две шкалы подбора, следующую смену, закрепление и быстрые действия. Пауза **смены обоев** не останавливает загрузку. Общий интервал не перезаписывает персональные интервалы мониторов; в списке папок можно выбрать свою подборку. При наведении на частично перекрытую карточку панель уходит влево и возвращается после ухода указателя.
+В свёрнутом виде панель показывает текущий статус. Раскройте её стрелкой, чтобы увидеть две шкалы подбора, следующую смену, закрепление и быстрые действия. Пауза **смены обоев** не останавливает загрузку. Общий интервал не перезаписывает персональные интервалы мониторов; в списке папок можно выбрать свою подборку. При наведении на перекрытую карточку панель **плавно скрывается**, освобождая её для просмотра и нажатия. После ухода указателя панель возвращается на прежнее место.
 
 **Настройки → Помощь и диагностика** содержит журнал, локальный отчёт и ссылку для сообщения об ошибке. В панели обращение к диагностике появляется при потере связи с приложением или серьёзной ошибке сохранения.
 
@@ -236,9 +236,9 @@
 
 ### 🚀 Get started
 
-**No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
+**No programming experience or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.1/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.6.1). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.2/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.6.2). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
