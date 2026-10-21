@@ -1,6 +1,6 @@
 {
   "name": "wallbloom",
-  "version": "0.5.23",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "description": "Local wallpaper recommendations for Windows",
@@ -44,6 +44,9 @@
       "desktop/**",
       "public/**",
       "server.mjs",
+      "profiles.mjs",
+      "library-features.mjs",
+      "diagnostics.mjs",
       "core.mjs",
       "library.mjs",
       "library-cleanup.mjs",

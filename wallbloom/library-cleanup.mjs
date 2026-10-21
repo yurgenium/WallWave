@@ -43,8 +43,10 @@ export function syncTagCleanup(db,now=Date.now()){
  db.tagCleanup={key,dueAt};return {count,dueAt};
 }
 export function shownCleanupCandidates(db){
- const current=new Set([db.current,...Object.values(db.monitorCurrent||{})].filter(Boolean));
- return db.items.filter(item=>{const rule=db.settings.cleanupAfterShows?.[item.vote||'pending'];return item.downloaded&&!current.has(item.id)&&rule?.enabled&&(item.showCount||0)>=rule.shows;});
+ const previous=(db.wallpaperHistory||[]).slice(0,3).flatMap(h=>[h.current,...Object.values(h.monitors||{})]);
+ const current=new Set([db.current,...Object.values(db.monitorCurrent||{}),...previous].filter(Boolean));
+ const collected=new Set((db.collections||[]).flatMap(c=>c.items));
+ return db.items.filter(item=>{const rule=db.settings.cleanupAfterShows?.[item.vote||'pending'];return item.downloaded&&!current.has(item.id)&&!collected.has(item.id)&&rule?.enabled&&(item.showCount||0)>=rule.shows;});
 }
 export function syncShownCleanup(db,now=Date.now()){
  const key=JSON.stringify(db.settings.cleanupAfterShows||{}),count=shownCleanupCandidates(db).length;

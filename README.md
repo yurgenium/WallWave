@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.5.23/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.5.23 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.6.0/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.6.0 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.23/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.5.23) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.0/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.6.0) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -48,6 +48,9 @@
 | **Поиск по интересам** | Теги и оценки влияют на подбор. Доступны Wallhaven, DeviantArt, Pixabay, Konachan, Bing, NASA Images, Wikimedia Commons, локальные папки и совместимые JSON-каталоги по HTTPS. |
 | **Библиотека с оценками** | Понравившиеся, нейтральные и отложенные обои легко найти отдельно. Повторы отсекаются при загрузке. |
 | **Автоматическое пополнение и смена** | Можно задать интервалы и расписание. Фоновые задачи учитывают простой и нагрузку компьютера. |
+| **Отдельные профили** | Раздельные библиотеки, оценки, теги, настройки и источники; при создании можно скопировать настройки основного профиля. |
+| **Собственные папки** | Собирайте подборки без копирования файлов и включайте показ только выбранной папки с длительным циклом без повторов. |
+| **Закрепление обоев** | Оставьте текущие обои на 1, 6, 12 часов, до ручной смены или выбранного времени через меню трея. |
 | **Несколько мониторов** | Для экранов доступны отдельные параметры смены, категорий и кадрирования. |
 | **Кадрирование и подгонка** | Обрезка, положение кадра, вписывание и отражение помогают подобрать изображение под экран. |
 | **Необязательный локальный ИИ** | CLIP сравнивает изображения с оценёнными и проверяет миниатюры перед скачиванием оригиналов. |
@@ -61,6 +64,16 @@
 Теги с запятой записываются в кавычках: `"название, с запятой", nature`. Нажатие на тег в карточке добавляет его целиком; правое нажатие управляет исключением.
 
 Отключение источника скрывает его неоценённые изображения. Удаление источника освобождает такие копии из библиотеки; оценённые изображения и личные исходные файлы сохраняются.
+
+### 👤 Профили, папки и закрепление
+
+Откройте **Настройки → Профили**, чтобы создать, переименовать или переключить профиль. Новый профиль начинает с пустой библиотеки. Флажок копирования переносит настройки основного профиля, включая теги; изображения, оценки и ключи остаются раздельными. Удаление доступно для неактивного дополнительного профиля; его данные сохраняются локально для восстановления.
+
+Кнопка **+** рядом с папками библиотеки создаёт собственную папку. Кнопка папки в карточке добавляет изображение в подборку, сохраняя текущий просмотр и оценку. Для смены обоев из одной подборки выберите её показ. Одно изображение может входить в несколько папок.
+
+В меню значка рядом с часами доступны **предыдущие обои** и **закрепление текущих**. После завершения закрепления приложение сменит обои и вернётся к обычному расписанию. Время вводится в 24-часовом формате; двоеточие добавляется автоматически.
+
+Если компьютер становится занят игрой или рендером, текущая работа ИИ останавливается. После отмены загрузки автоматический подбор приостанавливается на час; длительность можно изменить в настройках автоматизации. Ручной подбор снимает эту паузу. Кнопка повтора незавершённых загрузок продолжает скачивание уже найденных вариантов. При ошибке можно скачать диагностический отчёт и открыть журнал; отчёт не содержит API-ключей и личных тегов.
 
 ### 🌐 Источники и общий профиль вкусов
 
@@ -211,7 +224,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.5.23/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.5.23). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.0/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.6.0). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -229,6 +242,9 @@ For later launches, open `WallWave.exe` inside the chosen **WallWave** folder. T
 | **Interest-based discovery** | Tags and ratings guide selection from Wallhaven, DeviantArt, Pixabay, Konachan, Bing, NASA Images, Wikimedia Commons, local folders and compatible HTTPS JSON feeds. |
 | **Rated local library** | Keep favorites, neutral and deferred images in separate views; duplicate images are filtered during downloads. |
 | **Automatic downloading and rotation** | Choose intervals and schedules; background tasks account for idle time and system load. |
+| **Separate profiles** | Each profile has its own library, ratings, tags, settings and sources; copying the main profile’s settings is optional. |
+| **Custom folders** | Organize collections without copying files and rotate a selected folder with a long cycle before repeats. |
+| **Wallpaper hold** | Keep the current wallpaper for 1, 6 or 12 hours, until a manual change or until a chosen time from the tray menu. |
 | **Multiple monitors** | Configure rotation, content categories and framing for individual screens. |
 | **Framing** | Crop, position, fit or mirror images to suit the display. |
 | **Optional on-device AI** | CLIP compares images with your ratings and checks previews before originals are downloaded. |
@@ -242,6 +258,16 @@ Cards show the **image source**. The more-actions menu contains details and the 
 Quote tag names that contain commas: `"tag, with comma", nature`. Clicking a card tag adds its whole name; right-clicking controls exclusion.
 
 Disabling a source hides its unreviewed images. Removing it clears those library copies; rated images and personal source files are preserved.
+
+### 👤 Profiles, folders and wallpaper hold
+
+Open **Settings → Profiles** to create, rename or switch profiles. A new profile starts with an empty library. The optional settings copy includes the main profile’s tags; images, ratings and credentials remain separate. Only an inactive additional profile can be removed; its local data is retained for recovery.
+
+Use **+** beside the library folders to create a collection. The folder button on a wallpaper card adds it without changing the current view or rating. Choose a collection for rotation to use only its wallpapers. An image may belong to several collections.
+
+The tray menu offers **previous wallpaper** and **wallpaper hold**. When a hold expires, the app changes the wallpaper once and resumes the normal schedule. Time uses the 24-hour format, with a colon inserted automatically.
+
+If a game or render makes the computer busy, ongoing AI work stops. Cancelling a download pauses automatic selection for one hour; the duration is adjustable in automation settings. Manual selection clears this pause. Retry unfinished downloads continues downloading previously found candidates. Error controls provide a diagnostic report and log access; the report excludes API keys and personal tags.
 
 ### 🌐 Sources and a shared taste profile
 

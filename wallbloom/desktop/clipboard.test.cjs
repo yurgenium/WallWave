@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 
 test('clipboard bridge accepts one read per trusted paste-button click, including keyboard clicks',async()=>{
  let bridge,click,expiry,reads=0;
- const sandbox={window:{addEventListener:(name,fn,capture)=>{assert.equal(name,'click');assert.equal(capture,true);click=fn;}},setTimeout:fn=>{expiry=fn;return 1;},clearTimeout:()=>{},require:()=>({contextBridge:{exposeInMainWorld:(name,value)=>bridge=value},ipcRenderer:{send(){},invoke:async channel=>{assert.equal(channel,'wallwave:read-clipboard');reads++;return 'fixture';}}})};
+ const sandbox={window:{addEventListener:(name,fn,capture)=>{assert.equal(name,'click');assert.equal(capture,true);click=fn;}},setTimeout:fn=>{expiry=fn;return 1;},clearTimeout:()=>{},require:()=>({contextBridge:{exposeInMainWorld:(name,value)=>bridge=value},ipcRenderer:{on(){},send(){},invoke:async channel=>{assert.equal(channel,'wallwave:read-clipboard');reads++;return 'fixture';}}})};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'preload.cjs'),'utf8'),sandbox);
  const reject=()=>assert.rejects(bridge.readClipboard(),/Paste button gesture required/);
  const gesture=(isTrusted=true,button={disabled:false})=>click({isTrusted,target:{closest:selector=>{assert.equal(selector,'button[data-clipboard-paste]');return button;}}});
@@ -10,6 +10,10 @@ test('clipboard bridge accepts one read per trusted paste-button click, includin
  gesture();assert.equal(await bridge.readClipboard(),'fixture');await reject();assert.equal(reads,1);
  gesture();expiry();await reject();assert.equal(reads,1);
  gesture();assert.equal(await bridge.readClipboard(),'fixture');assert.equal(reads,2);
+});
+test('a tray hold request is retained until the renderer subscribes; other panel names are ignored',()=>{
+ let bridge,receive;const sandbox={window:{addEventListener(){}},require:()=>({contextBridge:{exposeInMainWorld:(name,value)=>bridge=value},ipcRenderer:{on:(channel,fn)=>{assert.equal(channel,'wallwave:open-panel');receive=fn;},send(){},invoke(){}}})};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'preload.cjs'),'utf8'),sandbox);receive(null,'hold');receive(null,'arbitrary');const panels=[];bridge.onOpenPanel(panel=>panels.push(panel));assert.deepEqual(panels,['hold']);receive(null,'arbitrary');assert.deepEqual(panels,['hold']);receive(null,'hold');assert.deepEqual(panels,['hold','hold']);
 });
 
 test('clipboard IPC accepts only the application main frame and bounds its result despite native focus lag',()=>{

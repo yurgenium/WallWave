@@ -8,7 +8,10 @@ window.addEventListener('click',event=>{
  clearTimeout(pasteExpiry);pasteClick=true;
  pasteExpiry=setTimeout(()=>{pasteClick=false;},0);
 },true);
+let panelListener,pendingPanel;ipcRenderer.on('wallwave:open-panel',(_,panel)=>{if(panel!=='hold')return;if(panelListener)panelListener(panel);else pendingPanel=panel;});
 contextBridge.exposeInMainWorld('wallwaveDesktop',{
+ openLogs:()=>ipcRenderer.invoke('wallwave:open-logs'),
+ onOpenPanel:listener=>{if(typeof listener!=='function')return;panelListener=listener;if(pendingPanel){const panel=pendingPanel;pendingPanel=null;listener(panel);}},
  readClipboard:()=>{
   if(!pasteClick)return Promise.reject(Error('Paste button gesture required'));
   pasteClick=false;clearTimeout(pasteExpiry);

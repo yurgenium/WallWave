@@ -15,6 +15,9 @@ export class ReviewState{
   }
   return this.commit(input);
  }
+ async flush(){
+  const values=[...this.pending.values()].filter(x=>!x.committing);for(const p of values)this.clearTimer(p.timer);const result=await Promise.all(values.map(p=>this.commit(p)));while(this.saving.size)await new Promise(resolve=>setTimeout(resolve,25));return result.every(Boolean);
+ }
  async commit(input){
   const p=this.pending.get(input.id),ownsPending=p?.reviewedAt===input.reviewedAt;if(ownsPending)p.committing=true;
   this.saving.set(input.id,input);this.touch(input.id);

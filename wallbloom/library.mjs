@@ -16,7 +16,7 @@ export async function usage(dir){
  return n;
 }
 export async function downloadImage(dir,x,s,signal,onProgress,items=[],options={}){
- const limit=s.maxItemMB*1024**2;let bytes;if(x.localSource){const stat=await fs.stat(x.localSource);if(stat.size>limit)throw new AppError('itemLimit');bytes=await fs.readFile(x.localSource);}else bytes=await fetchBytes(x.url,{...options.network,limit,signal,onProgress});
+ const limit=s.maxItemMB*1024**2;let bytes;if(x.localSource){const stat=await fs.stat(x.localSource);if(stat.size>limit)throw new AppError('itemLimit');bytes=await fs.readFile(x.localSource);}else bytes=await fetchBytes(x.url,{category:'original',...options.network,limit,signal,onProgress});
  const process=async()=>{signal.throwIfAborted();s=options.currentSettings?.()||s;if(bytes.length>s.maxItemMB*1024**2)throw new AppError('itemLimit');
  const sharp=await sharpModule();sharp.concurrency(1);sharp.cache(false);const image=sharp(bytes,{limitInputPixels:64000000,animated:false});const meta=await image.metadata();if(!['jpeg','png','webp','avif'].includes(meta.format))throw new AppError('invalidImage');const dimensions=sourceDimensions(meta);if(s.allowPortrait===false&&dimensions.sourceHeight>dimensions.sourceWidth)throw new AppError('portraitSkipped');
  const output=await image.rotate().flatten({background:'#10141a'}).resize(s.width,s.height,{fit:s.fit,withoutEnlargement:true,kernel:'lanczos3',background:'#10141a'}).jpeg({quality:s.quality}).toBuffer({resolveWithObject:true});signal.throwIfAborted();

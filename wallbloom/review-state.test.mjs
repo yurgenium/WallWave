@@ -27,3 +27,7 @@ test('a correction on the same image is accepted while the previous save is in f
  const first=reviews.vote({id:'a',vote:'neutral'}),second=reviews.vote({id:'a',vote:null});assert.equal(sent.length,2);assert.equal(reviews.saving.get('a').vote,null);
  waits[0]();await first;assert(reviews.saving.has('a'));waits[1]();await second;assert(!reviews.saving.size);
 });
+test('profile switching flushes pending dislikes and waits for in-flight saves',async()=>{
+ let finish,cancelled=0;const sent=[],reviews=new ReviewState({send:async value=>{sent.push(value);if(value.id==='saving')await new Promise(r=>finish=r);},setTimer:()=>1,clearTimer:()=>cancelled++});
+ await reviews.vote({id:'pending',vote:'dislike'});const saving=reviews.vote({id:'saving',vote:'like'});let flushed=false;const done=reviews.flush().then(x=>{flushed=x;});await Promise.resolve();assert(!flushed);assert.equal(cancelled,1);assert(sent.some(x=>x.id==='pending'));finish();await saving;await done;assert(flushed);assert.equal(reviews.pending.size,0);assert.equal(reviews.saving.size,0);
+});

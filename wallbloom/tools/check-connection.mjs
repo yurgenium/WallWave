@@ -25,6 +25,7 @@ try{
   await page.goto(base);
   if(language==='en')await page.locator('.card').waitFor({timeout:15000});
   await page.waitForFunction(()=>document.getElementById('message').textContent.includes('автоматически')||document.getElementById('message').textContent.includes('automatically'),{},{timeout:15000});
+  assert((await page.locator('.diagnostic-help h3').textContent()).length>0);assert.equal(await page.locator('.diagnostic-actions a').nth(1).getAttribute('href'),'https://github.com/yurgenium/WallWave/issues');
   await page.waitForFunction(()=>document.getElementById('message').textContent===''&&document.querySelectorAll('.card').length===1,{},{timeout:20000});
   await page.waitForFunction(()=>document.documentElement.lang===document.getElementById('language').value);
   assert.equal(await page.locator('html').getAttribute('lang'),language);assert.equal(maximum,1,'state reads must not overlap');assert.deepEqual(errors,[]);
