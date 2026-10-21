@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.6.0/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
-  Windows x64 · Русский / English · 0.6.0 · Тестовая версия / Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.6.1/WallWave.exe">⬇ Скачать для Windows / Download for Windows</a></strong><br>
+  Windows x64 · Русский / English · 0.6.1 · Тестовая версия / Preview
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 **Для готового приложения не нужны навыки программирования, Node.js или установка дополнительных пакетов.** Нужна 64-разрядная Windows и подключение к интернету для онлайн-источников.
 
-1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.0/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.6.0) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
+1. **Скачайте [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.1/WallWave.exe).** На [странице выпуска](https://github.com/yurgenium/WallWave/releases/tag/v0.6.1) он находится в блоке **Assets** («Файлы выпуска»). Архивы **Source code** содержат исходники и для обычного запуска не нужны.
 2. **Запустите скачанный файл двойным щелчком.** При первом запуске выберите место размещения. В нём появится папка **WallWave** с файлами приложения. Дождитесь распаковки и открытия окна.
 3. **Откройте «Настройки → Интересы и контент».** Укажите несколько интересов через запятую, например `nature, mountains, space`, и нажмите **«Сохранить»**. Для начала можно оставить остальные параметры по умолчанию.
 4. **Проверьте «Источники».** Wallhaven включён изначально. Для личных изображений добавьте источник «Локальная папка» и укажите папку с обоями. Этот же раздел доступен в настройках.
@@ -74,6 +74,20 @@
 В меню значка рядом с часами доступны **предыдущие обои** и **закрепление текущих**. После завершения закрепления приложение сменит обои и вернётся к обычному расписанию. Время вводится в 24-часовом формате; двоеточие добавляется автоматически.
 
 Если компьютер становится занят игрой или рендером, текущая работа ИИ останавливается. После отмены загрузки автоматический подбор приостанавливается на час; длительность можно изменить в настройках автоматизации. Ручной подбор снимает эту паузу. Кнопка повтора незавершённых загрузок продолжает скачивание уже найденных вариантов. При ошибке можно скачать диагностический отчёт и открыть журнал; отчёт не содержит API-ключей и личных тегов.
+
+### 🎛️ Плавающая панель
+
+В свёрнутом виде панель показывает текущий статус. Раскройте её стрелкой, чтобы увидеть две шкалы подбора, следующую смену, закрепление и быстрые действия. Пауза **смены обоев** не останавливает загрузку. Общий интервал не перезаписывает персональные интервалы мониторов; в списке папок можно выбрать свою подборку. При наведении на частично перекрытую карточку панель уходит влево и возвращается после ухода указателя.
+
+**Настройки → Помощь и диагностика** содержит журнал, локальный отчёт и ссылку для сообщения об ошибке. В панели обращение к диагностике появляется при потере связи с приложением или серьёзной ошибке сохранения.
+
+### ➕ Добавление сайтов
+
+В разделе **Источники** нажмите **Добавить сайт**, вставьте адрес и выберите **Определить подключение**. Для известных площадок появятся нужные поля и инструкция: API-ключ, Client ID / Client Secret или ID пользователя с ключом. Кнопка **Проверить поиск и миниатюру** проверяет безопасный запрос `landscape`, не скачивая оригиналы и не изменяя библиотеку. Она не гарантирует результаты по личным интересам. Сохранение подключения — отдельное действие.
+
+Для новых сайтов поддерживается распознавание совместимых **Danbooru JSON**, **Gelbooru / DAPI JSON** и JSON-каталогов WallWave. При необходимости формат и способ авторизации можно выбрать вручную и проверить. Подключается поиск по сайту; адрес автора или раздела не ограничивает подбор. Неизвестный сайт можно предложить через **Запросить поддержку сайта**: откроется форма GitHub Issues, которую пользователь проверяет и отправляет самостоятельно. В ссылку запроса передаётся только адрес сайта без параметров и данных доступа.
+
+Локальные папки и явные JSON-каталоги доступны в раскрываемом блоке добавления источника. Новые сайты не включаются автоматически при обновлении.
 
 ### 🌐 Источники и общий профиль вкусов
 
@@ -224,7 +238,7 @@
 
 **No programming experience, Node.js or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.0/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.6.0). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.6.1/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.6.1). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -268,6 +282,20 @@ Use **+** beside the library folders to create a collection. The folder button o
 The tray menu offers **previous wallpaper** and **wallpaper hold**. When a hold expires, the app changes the wallpaper once and resumes the normal schedule. Time uses the 24-hour format, with a colon inserted automatically.
 
 If a game or render makes the computer busy, ongoing AI work stops. Cancelling a download pauses automatic selection for one hour; the duration is adjustable in automation settings. Manual selection clears this pause. Retry unfinished downloads continues downloading previously found candidates. Error controls provide a diagnostic report and log access; the report excludes API keys and personal tags.
+
+### 🎛️ Floating panel
+
+The collapsed panel shows the current status. Expand it for the two selection progress bars, rotation timing, wallpaper hold and quick controls. Pausing **rotation** does not stop downloads. The default interval retains custom monitor intervals; the folder selector can restrict playback to a collection. Hovering the exposed part of a covered card moves the panel left; it returns after the pointer leaves.
+
+**Settings → Help and diagnostics** provides the log, local report and issue link. The panel offers diagnostics when the service connection is lost or a serious save error occurs.
+
+### ➕ Adding websites
+
+Open **Sources → Add website**, paste an address and choose **Identify connection**. Known websites show the required fields and instructions: API key, Client ID / Client Secret, or user ID and key. **Test search and preview** checks the safe `landscape` query without downloading originals or changing the library. It does not guarantee results for personal interests. Saving the connection is a separate action.
+
+New sites can be recognized as compatible **Danbooru JSON**, **Gelbooru / DAPI JSON** or WallWave JSON catalogs. Format and authentication can also be chosen manually and tested. This connects site-wide search; an artist or section URL does not restrict selection. **Request website support** opens a GitHub Issues form for the user to review and submit. The request link includes only the site origin, without query parameters or credentials.
+
+Local folders and explicit JSON catalogs remain in the expandable add-source section. Updates never enable new websites automatically.
 
 ### 🌐 Sources and a shared taste profile
 

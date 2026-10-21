@@ -1,6 +1,6 @@
 {
   "name": "wallbloom",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "type": "module",
   "description": "Local wallpaper recommendations for Windows",
@@ -78,7 +78,9 @@
       "ai-session.mjs",
       "art-providers.mjs",
       "search-profile.mjs",
-      "download-queue.mjs"
+      "download-queue.mjs",
+      "site-sources.mjs",
+      "source-check.mjs"
     ],
     "asarUnpack": [
       "**/*.node",

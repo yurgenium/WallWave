@@ -16,6 +16,18 @@ async function fixture(t,{settings={},config={}}={}){
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(errors)));}),base='http://127.0.0.1:'+port,get=async()=>await(await fetch(base+'/api/state')).json();
  return {data,file,base,get,async post(route,body={},profile){const s=await get(),r=await fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token,'X-Wallwave-Profile':profile||s.activeProfile},body:JSON.stringify(body)});assert.equal(r.status,200,await r.text());return get();},async wait(predicate){for(let i=0;i<600;i++){const s=await get();if(predicate(s))return s;await new Promise(r=>setTimeout(r,30));}throw Error('State timeout');}};
 }
+test('rotation pause and quick interval preserve downloading, schedules and individual monitor settings',async t=>{
+ const f=await fixture(t,{settings:{rotation:true,autoRefresh:true,schedule:['14:30'],monitors:{'screen-a':{rotation:true,rotationMinutes:120,purity:'100',tags:[]}}}});const before=await f.get();
+ let s=await f.post('rotation-pause',{paused:true});assert.equal(s.rotationPaused,true);assert.equal(s.automation.rotation.code,'rotationPaused');assert.equal(s.settings.autoRefresh,true);assert.equal(s.settings.rotation,true);
+ s=await f.post('rotation-options',{minutes:15});assert.equal(s.settings.rotationMinutes,15);assert.deepEqual(s.settings.monitors,before.settings.monitors);assert.deepEqual(s.settings.schedule,['14:30']);
+ s=await f.post('rotation-pause',{paused:false});assert.equal(s.rotationPaused,false);assert.equal(s.paused,true);
+});
+test('source recognition and checks return safe summaries and do not save or enable providers',async t=>{
+ const f=await fixture(t),s=await f.get();await fs.copyFile(path.join(f.data,'pending','a.jpg'),f.file+'.a.png');await fs.writeFile(f.file,JSON.stringify({items:[{id:'a',url:'https://example.com/a',tags:['nature'],rating:'safe'}]}));const request=async(route,body)=>{const r=await fetch(f.base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token},body:JSON.stringify(body)});assert.equal(r.status,200);return r.json();};
+ const d=await request('source-detect',{url:'https://www.deviantart.com'});assert.equal(d.auth,'client');assert.equal(d.type,'deviantart');
+ const checked=await request('source-check',{id:'personal'});assert.equal(checked.ok,true);assert(!JSON.stringify(checked).includes('FIXTURE_SECRET'));assert.deepEqual((await f.get()).providers,s.providers);assert.equal((await f.get()).items.length,s.items.length);
+ const stored=JSON.parse(await fs.readFile(path.join(f.data,'state.json'),'utf8'));assert.equal(stored.items.length,2);
+});
 test('profile switching isolates preferences, credentials, sources and ratings without moving the main library',async t=>{
  const f=await fixture(t);let s=await f.get();assert.equal(s.activeProfile,'main');assert.equal(s.items.length,2);const bing=s.providers.find(p=>p.type==='bing');assert(bing);s=await f.post('provider',{...bing,remove:true});
  s=await f.post('profiles',{action:'create',name:'Second',copySettings:true});const p=s.profiles.find(p=>p.name==='Second');assert(p);assert.equal(s.activeProfile,'main');

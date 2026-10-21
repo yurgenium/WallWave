@@ -18,7 +18,7 @@ const child=fork(path.join(root,'server.mjs'),[],{execArgv:['test-native-loader.
 try{
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error('Service exited')));}),base='http://127.0.0.1:'+port,get=async()=>await(await fetch(base+'/api/state')).json();
  const until=async predicate=>{const deadline=Date.now()+25000;while(Date.now()<deadline){const state=await get();if(predicate(state))return state;await new Promise(resolve=>setTimeout(resolve,50));}assert.fail('State timed out');};
- browser=await chromium.launch({channel:'msedge',headless:true});const page=await browser.newPage({viewport:{width:1280,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#refresh').click();
+ browser=await chromium.launch({channel:'msedge',headless:true});const page=await browser.newPage({viewport:{width:1280,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#statusToggle').click();await page.locator('#refresh').click();
  await page.waitForFunction(()=>document.getElementById('preparedText').textContent==='Подготовлено: 4 из 4');
  assert.equal(await page.locator('#jobText').textContent(),'Подбор и загрузка обоев');assert.equal(await page.locator('#progress').isVisible(),false);
  assert.equal(await page.locator('#preparedProgress').getAttribute('max'),'4');assert.equal(await page.locator('#preparedProgress').getAttribute('value'),'4');assert(Number(await page.locator('#downloadedProgress').getAttribute('value'))<4);

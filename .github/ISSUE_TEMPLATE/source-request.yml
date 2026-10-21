@@ -1,0 +1,24 @@
+name: "🌐 Подключение сайта / Website support"
+description: "Предложить новый источник обоев / Request a new wallpaper source"
+title: "Поддержка нового источника / New source: "
+body:
+  - type: markdown
+    attributes:
+      value: "Укажите публичный адрес сайта. Не добавляйте пароли, API-ключи или токены. / Provide the public website URL. Do not include passwords, API keys or tokens."
+  - type: input
+    id: site
+    attributes:
+      label: "Адрес сайта / Website URL"
+      placeholder: "https://example.org"
+    validations:
+      required: true
+  - type: textarea
+    id: selection
+    attributes:
+      label: "Что требуется загружать / What should be imported"
+      description: "Поиск по тегам, работы автора, коллекция или другое. / Tag search, an artist’s works, a collection, or something else."
+  - type: textarea
+    id: connection
+    attributes:
+      label: "Информация о подключении / Connection information"
+      description: "При наличии добавьте ссылку на документацию API. / Include an API documentation link if available."

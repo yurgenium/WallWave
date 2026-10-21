@@ -1,3 +1,4 @@
+import {searchBooru,normalizeSite} from './site-sources.mjs';
 import {sourceCatalog} from './public/provider-catalog.js';
 import {searchCatalog,enrichNASA} from './catalog-providers.mjs';
 import fs from 'node:fs/promises';
@@ -8,7 +9,7 @@ import {fetchJSON} from './network.mjs';
 import {artSources} from './art-providers.mjs';
 export const initialProviders=[{id:'wallhaven',name:'Wallhaven',type:'wallhaven',enabled:true},{id:'local',name:'Local folder',type:'local',enabled:false,folder:''},...sourceCatalog.map(({about,...p})=>({...p}))];
 export async function enrich(item,key,signal){if(item.deviantartId)return artSources.enrich(item,key,signal);if(item.nasaId)return enrichNASA(item,signal);if(item.provider!=='wallhaven'||Date.now()-(item.tagDetailsAt||0)<86400000)return item;const u=new URL(`https://wallhaven.cc/api/v1/w/${item.id.slice('wallhaven-'.length)}`);if(key)u.searchParams.set('apikey',key);const {data}=await fetchJSON(u,signal);if(!data||!Array.isArray(data.tags))throw new AppError('sourceUnavailable');item.tags=data.tags.map(t=>t.name);item.tagDetailsAt=Date.now();item.rating=data.purity==='sfw'?'safe':data.purity==='sketchy'?'suggestive':'adult';return item;}
-export function validateProvider(p){if(!p||!['wallhaven','local','feed','bing','nasa','commons','deviantart','pixabay','konachan'].includes(p.type)||typeof p.name!=='string'||!p.name.trim()||p.name.length>80||typeof p.enabled!=='boolean')throw new AppError('invalidProvider');if(p.type==='local'&&(typeof p.folder!=='string'||!path.isAbsolute(p.folder)))throw new AppError('invalidProvider');if(p.type==='feed'){let u;try{u=new URL(p.url);}catch{throw new AppError('invalidProvider');}if(u.protocol!=='https:'||u.username||u.password)throw new AppError('invalidProvider');}return p;}
+export function validateProvider(p){if(!p||!['wallhaven','local','feed','bing','nasa','commons','deviantart','pixabay','konachan','booru'].includes(p.type)||typeof p.name!=='string'||!p.name.trim()||p.name.length>80||typeof p.enabled!=='boolean')throw new AppError('invalidProvider');if(p.type==='booru'){const u=normalizeSite(p.url);if(!['danbooru','gelbooru'].includes(p.engine)||!['none','userKey','loginKey'].includes(p.auth))throw new AppError('invalidProvider');p.url=u.origin+'/';}if(p.type==='local'&&(typeof p.folder!=='string'||!path.isAbsolute(p.folder)))throw new AppError('invalidProvider');if(p.type==='feed'){let u;try{u=new URL(p.url);}catch{throw new AppError('invalidProvider');}if(u.protocol!=='https:'||u.username||u.password)throw new AppError('invalidProvider');}return p;}
 // A thousand local exclusions must not produce an oversized HTTP URL.
 // Remaining exclusions are still checked after enrichment, before the original download.
 const wallhavenTerm=tag=>/^[\p{L}\p{N}_][\p{L}\p{N}_-]*$/u.test(tag)?tag:JSON.stringify(tag);
@@ -21,6 +22,7 @@ export function searchCursor(state,id,signature,mode){
  return cursor;
 }
 export async function searchProvider(p,s,key,signal,page=1,context={}){
+ if(p.type==='booru')return searchBooru(p,s,key,signal,page,context);
  if(['deviantart','pixabay','konachan'].includes(p.type))return artSources.search(p,s,key,signal,page,context);
  if(['bing','nasa','commons'].includes(p.type))return searchCatalog(p,s,signal,page);
  if(p.type==='wallhaven'){if(contentMask(s)[2]==='1'&&!key)throw new AppError('apiKeyRequired');const u=new URL('https://wallhaven.cc/api/v1/search');const tag=s.tags.length?s.tags[(page-1)%s.tags.length]:'';for(const [k,v]of Object.entries({q:wallhavenQuery(tag,s.excludedTags),sorting:'toplist',topRange:s.period,purity:contentMask(s),page:String(Math.ceil(page/Math.max(1,s.tags.length)))}))u.searchParams.set(k,v);if(key)u.searchParams.set('apikey',key);let json;try{json=await fetchJSON(u,signal);}catch(e){if(e.status===404&&Number(u.searchParams.get('page'))>1)return [];throw e;}if(!Array.isArray(json.data))throw new AppError('invalidFeed');return json.data.map(x=>({id:safeId(p.id,x.id),provider:p.id,title:`Wallhaven ${x.id}`,url:x.path,source:x.url,preview:x.thumbs?.small,tags:(x.tags||[]).map(t=>t.name),rating:x.purity==='sfw'?'safe':x.purity==='sketchy'?'suggestive':'adult',width:x.dimension_x,height:x.dimension_y,size:Number(x.file_size)||0}));}

@@ -19,3 +19,9 @@ test('DeviantArt original-download quota is reported distinctly without leaking 
  await assert.rejects(fetchJSON('https://www.deviantart.com/api/v1/oauth2/deviation/download/fixture'),e=>e.code==='sourceQuotaReached'&&e.status===400&&!e.message.includes('Free download'));
  await assert.rejects(fetchJSON('https://www.deviantart.com/api/v1/oauth2/browse/tags'),e=>e.code==='sourceUnavailable'&&e.status===400);
 });
+test('DeviantArt maintenance pages are distinct, bounded and do not trigger repeated token attempts',async t=>{
+ t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);let requests=0;
+ t.mock.method(https,'request',(_u,_o,resolve)=>{requests++;const req=new EventEmitter();req.setTimeout=()=>{};req.end=()=>queueMicrotask(()=>{const res=Readable.from([Buffer.from('<html><title>Maintenance | DeviantArt</title>'+'.'.repeat(100000))]);res.statusCode=503;res.headers={};resolve(res);});return req;});
+ await assert.rejects(fetchJSON('https://www.deviantart.com/oauth2/token',null,{method:'POST',body:'client_secret=FIXTURE_ONLY'}),e=>e.code==='sourceMaintenance'&&e.status===503&&!e.message.includes('FIXTURE'));
+ assert.equal(requests,1);
+});
