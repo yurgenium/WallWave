@@ -1,2 +1,0 @@
-import {registerHooks} from 'node:module';
-registerHooks({resolve(specifier,context,next){if(specifier==='./network.mjs'&&(context.parentURL?.endsWith('/site-sources.mjs')||context.parentURL?.endsWith('/source-check.mjs')||context.parentURL?.endsWith('/art-providers.mjs')||context.parentURL?.endsWith('/providers.mjs')||context.parentURL?.endsWith('/library.mjs')||context.parentURL?.endsWith('/server.mjs')))return {url:new URL('./test-download-network.mjs',import.meta.url).href,shortCircuit:true};return next(specifier,context);}});

@@ -1,8 +1,0 @@
-// Manual live check. --apply authorizes changing the Windows desktop.
-import assert from 'node:assert/strict';
-import {desktopInfo} from '../windows.mjs';
-import path from 'node:path';
-const url='http://127.0.0.1:43198';let s=await(await fetch(url+'/api/state')).json();const settings=s.settings;
-const post=async(route,value)=>{const r=await fetch(url+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token},body:JSON.stringify(value)});if(!r.ok)throw Error((await r.json()).error);};
-async function wait(){for(let i=0;i<180;i++){await new Promise(r=>setTimeout(r,1000));s=await(await fetch(url+'/api/state')).json();if(!s.job)return s;}throw Error('Live check timeout');}
-try{if(!process.argv.includes('--cached')){await post('settings',{...settings,tags:['nature'],preset:'safe',batch:2});await post('refresh',{});await wait();}const items=s.items.filter(x=>x.downloaded&&x.rating==='safe');console.log(JSON.stringify({downloaded:items.length,items:items.map(x=>({title:x.title,width:x.width,height:x.height,bytes:x.bytes})),errors:s.events.filter(x=>/Failed|Limit|Unavailable/i.test(x.code)).slice(0,3)}));assert.ok(items.length>0,'No downloaded images');if(process.argv.includes('--apply')){await post('apply',{id:items[0].id});await wait();assert.equal(s.current,items[0].id,s.events[0]?.code);const actual=await desktopInfo();assert.equal(path.resolve(actual.wallpaper).toLowerCase(),path.join(s.library,'pending',items[0].id+'.jpg').toLowerCase());assert.ok(s.canRestore);console.log('PASS: real wallpaper changed; previous image backed up.');}}finally{await post('settings',settings);}
