@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 
 test('tray locks mutations during archives and rebuilds between busy operation kinds',()=>{
  const app={setName(){},setAppUserModelId(){},setPath(){},getPath(){return __dirname;},getAppPath(){return path.resolve(__dirname,'..');},getLoginItemSettings(){return {openAtLogin:false};},requestSingleInstanceLock(){return false;},quit(){}};
- const electron={app,ipcMain:{on(){},handle(){}},nativeImage:{createFromPath:file=>file},Menu:{buildFromTemplate:items=>items}};
+ const electron={app,protocol:{registerSchemesAsPrivileged(){}},ipcMain:{on(){},handle(){}},nativeImage:{createFromPath:file=>file},Menu:{buildFromTemplate:items=>items}};
  const sandbox={require:id=>id==='electron'?electron:require(id),__dirname,process:{env:{},execPath:process.execPath}};
  vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'main.cjs'),'utf8'),sandbox);
  vm.runInContext(`base='http://127.0.0.1:1';tray={setImage(){},setToolTip(){},setContextMenu(){}};

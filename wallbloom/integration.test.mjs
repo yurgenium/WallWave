@@ -36,6 +36,9 @@ test('local import, real resize, folders, ratings, content filter, keys and rest
   }
  }
  assert.equal(image.headers.get('cross-origin-resource-policy'),'same-origin');
+ assert.equal(image.headers.get('cache-control'),'private, max-age=3600');
+ assert.equal((await fetch(url+'/api/state')).headers.get('cache-control'),'no-store');
+ assert.equal((await fetch(url+'/app.js')).headers.get('cache-control'),'no-store');
  const wrongHost=await new Promise((resolve,reject)=>http.get(url+'/api/state',{headers:{Host:'untrusted.example'}},response=>{response.resume();response.once('end',()=>resolve(response.statusCode));}).once('error',reject));assert.equal(wrongHost,403);
  assert.equal((await fetch(url+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token,Origin:'https://untrusted.example'},body:'{}'})).status,403);
  await post('provider',{id:'local',enabled:false});await post('provider',{name:'Adult test folder',type:'local',enabled:true,folder:source,rating:'adult'});await post('refresh',{});for(let i=0;i<100;i++){s=await(await fetch(url+'/api/state')).json();if(!s.job)break;await new Promise(r=>setTimeout(r,100));}assert.equal(s.items.length,0);await post('provider',{id:'local',enabled:true});assert.ok(Object.values(s.providerStatus).some(p=>p.code==='noNew'));

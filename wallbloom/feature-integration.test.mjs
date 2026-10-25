@@ -6,10 +6,10 @@ import path from 'node:path';
 import {fork} from 'node:child_process';
 import {defaults,sharpModule} from './core.mjs';
 
-async function fixture(t,{settings={},config={}}={}){
+async function fixture(t,{settings={},config={},itemRating='safe'}={}){
  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-features-')),data=path.join(temp,'library'),file=path.join(temp,'fixture.json');await fs.mkdir(path.join(data,'pending'),{recursive:true});await fs.mkdir(path.join(data,'thumbnails'));await fs.writeFile(file,JSON.stringify(config));
  const sharp=await sharpModule();for(const [id,color]of [['a','#774411'],['b','#225577']]){const bytes=await sharp({create:{width:800,height:600,channels:3,background:color}}).jpeg().toBuffer();await fs.writeFile(path.join(data,'pending',id+'.jpg'),bytes);await fs.writeFile(path.join(data,'thumbnails',id+'.jpg'),bytes);}
- await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,tags:['mountains'],...settings},providers:[{id:'personal',type:'feed',name:'Personal fixture',url:'https://example.com/feed',enabled:true}],items:['a','b'].map(id=>({id,provider:'personal',title:id,tags:['mountains'],rating:'safe',downloaded:true,thumbnailVersion:2})),current:'a',monitorCurrent:{'screen-a':'a'},pages:{},lastRefresh:Date.now(),lastRotation:Date.now()}));
+ await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,tags:['mountains'],...settings},providers:[{id:'personal',type:'feed',name:'Personal fixture',url:'https://example.com/feed',enabled:true}],items:['a','b'].map(id=>({id,provider:'personal',title:id,tags:['mountains'],rating:itemRating,downloaded:true,thumbnailVersion:2})),current:'a',monitorCurrent:{'screen-a':'a'},pages:{},lastRefresh:Date.now(),lastRotation:Date.now()}));
  await fs.writeFile(path.join(data,'credentials.json'),JSON.stringify({personal:'FIXTURE_SECRET_ONLY'}));
  const child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['test-native-loader.mjs','test-download-loader.mjs','test-ai-loader.mjs'].flatMap(n=>['--import',new URL('./tools/'+n,import.meta.url).href]),env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_PORT:'0',WALLBLOOM_NATIVE_FIXTURE:file},silent:true,windowsHide:true});child.stdout.resume();let errors='';child.stderr.on('data',b=>errors+=b);
  t.after(async()=>{if(child.exitCode===null){const ended=new Promise(r=>child.once('exit',r));child.send({type:'shutdown'});await ended;}await fs.rm(temp,{recursive:true,force:true});});
@@ -54,6 +54,53 @@ test('manual AI selection stops, including network transfers, when a game become
  await f.post('refresh');await f.wait(s=>s.events.some(e=>e.code==='aiScreening'));await fs.writeFile(f.file,JSON.stringify({...config,activity:{cpuLoad:5,gpuLoad:0,fullscreen:true}}));
  const s=await f.wait(s=>!s.job);assert.equal(s.guard.code,'fullscreen');assert.equal(s.refreshReason,'waitIdle');assert.equal(s.refreshDownloaded,0);const starts=(await fs.readFile(f.file+'.starts','utf8')).trim().split('\n').map(JSON.parse);assert(!starts.some(x=>x.original));
 });
+
+test('diagnostics identify the exact monitor filter behind an unavailable wallpaper and keep the last failure',async t=>{
+ const f=await fixture(t,{itemRating:'adult',settings:{purity:'111',monitors:{'screen-b':{rotation:false,rotationMinutes:60,purity:'100',tags:[]}}}});
+ await f.post('apply',{id:'b'});let s=await f.wait(s=>!s.wallpaperAction);
+ assert.equal(s.wallpaperResult.code,'notAvailable');
+ let report=await(await fetch(f.base+'/api/diagnostics')).json();
+ const version=JSON.parse(await fs.readFile(new URL('./package.json',import.meta.url),'utf8')).version;
+ assert.equal(report.version,version);assert.equal(report.schemaVersion,2);assert.equal(report.environment.platform,process.platform);
+ assert.equal(report.history.lastFailure.action,'apply');assert.equal(report.history.lastFailure.error.reason,'ratingBlocked');
+ assert.equal(report.history.lastFailure.error.stage,'eligibility');assert.equal(report.history.lastFailure.error.monitor,2);
+ assert.equal(report.context.selection.eligible,2);assert.equal(report.context.monitors[1].selection.eligible,0);
+ assert.equal(report.context.monitors[1].selection.blocked.ratingBlocked,2);assert.equal(report.context.monitors[1].purity,'100');
+ await f.post('settings',{...s.settings,monitors:{}});await f.post('next');s=await f.wait(s=>!s.wallpaperAction);
+ report=await(await fetch(f.base+'/api/diagnostics')).json();
+ assert.equal(report.wallpaperResult.code,'wallpaperChanged',JSON.stringify(report.history));assert.equal(report.lastError,null);
+ assert.equal(report.history.lastFailure.error.reason,'ratingBlocked');
+ // Already downloaded images remain visible, but exclusions can prevent applying them.
+ await f.post('settings',{...s.settings,excludedTags:['mountains']});await f.post('apply',{id:'b'});await f.wait(s=>!s.wallpaperAction);
+ report=await(await fetch(f.base+'/api/diagnostics')).json();assert.equal(report.history.lastFailure.error.reason,'excludedTags');
+ assert.equal(report.context.selection.blocked.excludedTags,2);
+ const serialized=JSON.stringify(report);for(const privateValue of ['mountains','Personal fixture','example.com','screen-a','screen-b','FIXTURE_SECRET_ONLY',f.data])assert(!serialized.includes(privateValue));
+ const history=JSON.parse(await fs.readFile(path.join(f.data,'diagnostic-history.json'),'utf8'));assert.equal(history.lastFailure.error.reason,'excludedTags');
+});
+
+test('diagnostics attribute a download rejected after filter changes to the refresh action',async t=>{
+ const config={downloadDelay:1000,items:[{id:'adult',url:'https://example.com/adult',width:800,height:600,rating:'adult',tags:[]}]};
+ const f=await fixture(t,{settings:{purity:'111',ai:'off'},config});
+ await fs.copyFile(path.join(f.data,'pending','a.jpg'),f.file+'.adult.png');
+ await f.post('refresh');await f.wait(s=>s.job?.active>0);
+ const state=await f.get();await f.post('settings',{...state.settings,purity:'100'});
+ await f.wait(s=>!s.job);
+ const report=await(await fetch(f.base+'/api/diagnostics')).json(),failure=report.history.lastFailure;
+ assert.equal(failure.action,'refresh');assert.equal(failure.code,'notAvailable');assert.equal(failure.error.reason,'ratingBlocked');
+ assert.equal(failure.error.stage,'downloadValidation');assert.equal(failure.error.rating,'adult');
+ assert(report.history.operations.some(x=>x.action==='refresh'&&x.status==='success'));
+ assert(!JSON.stringify(report).includes('example.com'));
+});
+test('manual AI selection finishes through a brief CPU spike without discarding its batch',{timeout:20000},async t=>{
+ const config={aiDelay:7000,activity:{cpuLoad:5,gpuLoad:0},items:[{id:'new',url:'https://example.com/new',preview:'https://example.com/new',width:800,height:600,rating:'safe',tags:[]}]};
+ const f=await fixture(t,{settings:{ai:'auto',aiFilter:'cautious',batch:1,pendingTarget:24},config});
+ await(await sharpModule())({create:{width:800,height:600,channels:3,background:'#22bb44'}}).png().toFile(f.file+'.new.png');
+ const activity=async value=>{await fs.writeFile(f.file+'.next',JSON.stringify({...config,activity:value}));await fs.rename(f.file+'.next',f.file);};
+ await f.post('refresh');await f.wait(s=>s.events.some(e=>e.code==='aiScreening'));
+ await activity({cpuLoad:90,gpuLoad:0});const peak=await f.wait(s=>s.guard.cpuLoad===90);assert(peak.job);assert.equal(peak.guard.code,'idle');
+ await activity({cpuLoad:5,gpuLoad:0});const done=await f.wait(s=>!s.job);assert.equal(done.refreshDownloaded,1);assert.equal(done.refreshOutcome,'poolUpdated');assert.notEqual(done.refreshReason,'waitIdle');assert.equal(done.lastError,null);
+});
+
 test('an expired hold changes once and leaves the user rotation setting unchanged',{timeout:25000},async t=>{
  const schedule=[new Date(),new Date(Date.now()+60000)].map(d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));const f=await fixture(t,{settings:{schedule}});let s=await f.post('wallpaper-hold',{mode:'until',until:Date.now()+1000});assert(s.wallpaperHold);await f.post('pause',{paused:false});s=await f.wait(s=>!s.wallpaperHold&&!s.job);assert.equal(s.settings.rotation,false);assert(s.wallpaperHistory?.length===undefined);assert(s.canPrevious);assert(s.items.some(x=>x.rotationCount>0));assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.data,'state.json'),'utf8')).rotationTriggers,[]);
 });

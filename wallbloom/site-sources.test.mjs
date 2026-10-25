@@ -29,6 +29,15 @@ test('booru imports keep ratings, tag boundaries and source identity; unsafe and
  const items=parseBooru([image,{...image,id:43,rating:'s'},{...image,id:44,file_url:'https://example.org/animation.mp4'},{...image,id:45,file_url:'http://example.org/a.jpg'}],p);assert.equal(items.length,2);assert.equal(items[0].rating,'safe');assert.equal(items[1].rating,'suggestive');assert.deepEqual(items[0].tags,['mountain','lake']);assert.equal(items[0].source,'https://example.org/posts/42');assert(items[0].id.startsWith('test-'));
  assert.equal(parseBooru({post:[{...image,rating:'s',tags:'tag_one tag_two'}]},{...p,engine:'gelbooru'})[0].rating,'safe');assert.throws(()=>parseBooru({},p),{code:'invalidFeed'});
 });
+test('booru API notices are not reported as malformed catalogues or exposed to users',async()=>{
+ assert.throws(()=>parseBooru('Missing authentication. Go to api.rule34.xxx for more information',p),{code:'sourceAuthFailed'});
+ assert.throws(()=>parseBooru({success:false,message:'Invalid API key'},p),{code:'sourceAuthFailed'});
+ assert.throws(()=>parseBooru('Too many requests',p),{code:'rateLimited'});
+ assert.throws(()=>parseBooru({success:false,message:'search down'},p),{code:'sourceUnavailable'});
+ await assert.rejects(searchBooru(p,defaults,'',null,1,{request:async()=>({unexpected:true})}),{code:'sourceAPIResponse'});
+ assert.deepEqual(await searchBooru(p,defaults,'',null,1,{request:async()=>[]}),[]);
+});
+
 test('booru pagination distributes interests and credentials stay in site requests',async()=>{
  let called;await searchBooru(p,{...defaults,tags:['lake','mountain']},'',null,3,{request:async url=>{called=url;return [image];}});assert.equal(called.searchParams.get('page'),'2');assert.equal(called.searchParams.get('tags'),'lake rating:g');
  const key=JSON.stringify({user_id:'123',api_key:'FIXTURE_ONLY'}),u=booruURL({...p,engine:'gelbooru',auth:'userKey'},{page:2,key});assert.equal(u.searchParams.get('pid'),'1');assert.equal(u.searchParams.get('user_id'),'123');assert.equal(u.searchParams.get('api_key'),'FIXTURE_ONLY');assert.throws(()=>booruURL({...p,auth:'userKey'}),{code:'apiKeyRequired'});

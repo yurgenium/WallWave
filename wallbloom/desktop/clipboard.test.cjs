@@ -18,9 +18,21 @@ test('a tray hold request is retained until the renderer subscribes; other panel
 
 test('clipboard IPC accepts only the application main frame and bounds its result despite native focus lag',()=>{
  const handlers={},app={setName(){},setAppUserModelId(){},setPath(){},getPath(){return __dirname;},requestSingleInstanceLock(){return false;},quit(){}};
- const sandbox={require:id=>id==='electron'?{app,ipcMain:{on(){},handle:(name,fn)=>handlers[name]=fn},clipboard:{readText:()=> 'x'.repeat(5000)}}:require(id),__dirname,process:{env:{},execPath:process.execPath}};vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'main.cjs'),'utf8'),sandbox);
+ const sandbox={require:id=>id==='electron'?{app,protocol:{registerSchemesAsPrivileged(){}},ipcMain:{on(){},handle:(name,fn)=>handlers[name]=fn},clipboard:{readText:()=> 'x'.repeat(5000)}}:require(id),__dirname,process:{env:{},execPath:process.execPath}};vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'main.cjs'),'utf8'),sandbox);
  vm.runInContext("base='http://127.0.0.1:1';window={isFocused:()=>false,webContents:{mainFrame:{url:base+'/'}}};",sandbox);const webContents=vm.runInContext('window.webContents',sandbox),event={sender:webContents,senderFrame:webContents.mainFrame},read=handlers['wallwave:read-clipboard'];assert.equal(read(event).length,4097);
  assert.throws(()=>read({...event,sender:{}}),/Clipboard unavailable/);assert.throws(()=>read({...event,senderFrame:{url:webContents.mainFrame.url}}),/Clipboard unavailable/);
  vm.runInContext("window.webContents.mainFrame.url=base+'/other';",sandbox);assert.throws(()=>read(event),/Clipboard unavailable/);
  vm.runInContext('window=null',sandbox);assert.throws(()=>read(event),/Clipboard unavailable/);
+});
+
+test('diagnostic saving requires the application main frame and cancellation writes no file',async()=>{
+ const handlers={},app={setName(){},setAppUserModelId(){},setPath(){},getPath(){return __dirname;},requestSingleInstanceLock(){return false;},quit(){}};let dialogs=0;
+ const electron={app,protocol:{registerSchemesAsPrivileged(){}},ipcMain:{on(){},handle:(name,fn)=>handlers[name]=fn},dialog:{async showSaveDialog(){dialogs++;return {canceled:true};}}};
+ const sandbox={require:id=>id==='electron'?electron:require(id),__dirname,process:{env:{},execPath:process.execPath}};
+ vm.createContext(sandbox);vm.runInContext(fs.readFileSync(path.join(__dirname,'main.cjs'),'utf8'),sandbox);
+ vm.runInContext("base='wallwave://app';window={webContents:{mainFrame:{url:base+'/'}}};",sandbox);
+ const sender=vm.runInContext('window.webContents',sandbox),save=handlers['wallwave:save-diagnostics'];
+ await assert.rejects(save({sender:{},senderFrame:sender.mainFrame}),/Diagnostics unavailable/);
+ await assert.rejects(save({sender,senderFrame:{url:'wallwave://app/'}}),/Diagnostics unavailable/);
+ assert.equal(dialogs,0);assert.equal((await save({sender,senderFrame:sender.mainFrame})).canceled,true);assert.equal(dialogs,1);
 });

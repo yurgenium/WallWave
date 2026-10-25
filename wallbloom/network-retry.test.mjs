@@ -1,5 +1,14 @@
 import test from 'node:test';import assert from 'node:assert/strict';import dns from 'node:dns/promises';import https from 'node:https';import {EventEmitter} from 'node:events';import {Readable} from 'node:stream';import {fetchBytes,RequestGate} from './network.mjs';
 import {wallhavenQuery} from './providers.mjs';
+import {fetchJSON} from './network.mjs';
+
+test('Rule34 empty post searches are valid empty lists; other empty API bodies remain errors',async t=>{
+ t.mock.method(dns,'lookup',async()=>[{address:'8.8.8.8',family:4}]);
+ t.mock.method(https,'get',(_,options,resolve)=>{const req=new EventEmitter();req.setTimeout=()=>{};queueMicrotask(()=>{const res=Readable.from([]);res.statusCode=200;res.headers={};resolve(res);});return req;});
+ assert.deepEqual(await fetchJSON('https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1'),[]);
+ await assert.rejects(fetchJSON('https://example.org/catalogue.json'),{code:'invalidFeed'});
+ await assert.rejects(fetchJSON('https://api.rule34.xxx/unknown'),{code:'invalidFeed'});
+});
 
 test('Wallhaven keeps multiword tags and excluded phrases in one search term',()=>{
  assert.equal(wallhavenQuery('video games',['simple background','artist name','landscape']),'"video games" -"simple background" -"artist name" -landscape');

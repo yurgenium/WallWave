@@ -41,6 +41,10 @@
 /* Fast content filters stay in the library's upper-right corner. */
 .library-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}
 .library-toolbar>.filters{min-width:0}
+.library-toolbar-anchor{height:1px;margin-bottom:-1px;pointer-events:none}
+.library-toolbar{position:sticky;top:8px;z-index:30;padding:10px 12px;background:#192129ed;backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:10px;transition:opacity .2s ease}
+.library-toolbar[data-stuck="true"]{opacity:.55}
+.library-toolbar[data-stuck="true"]:hover,.library-toolbar[data-stuck="true"]:has(:focus-visible){opacity:1}
 .library-toolbar>.purity-control{justify-self:end;gap:0}
 .library-toolbar .purity-label{display:none}
 .library-toolbar .purity-button{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;padding:7px 9px}

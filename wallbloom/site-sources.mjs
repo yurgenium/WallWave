@@ -29,6 +29,10 @@ export function knownSite(value){
 export function booruRecords(json){return Array.isArray(json)?json:Array.isArray(json?.post)?json.post:Array.isArray(json?.posts)?json.posts:null;}
 const mediaURL=(value,base)=>{if(typeof value!=='string'||!value)return null;try{const u=new URL(value,base);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch{return null;}};
 export function parseBooru(json,p){
+ const notice=typeof json==='string'?json:json?.success===false||json?.success==='false'?String(json.message||json.reason||''):'';
+ if(/missing authentication|invalid.{0,24}(?:api.?key|user.?id)|(?:api.?key|authentication).{0,24}(?:invalid|required|missing)/i.test(notice))throw new AppError('sourceAuthFailed');
+ if(/rate.?limit|too many requests|request limit/i.test(notice))throw new AppError('rateLimited');
+ if(/search down|overload|temporarily unavailable/i.test(notice))throw new AppError('sourceUnavailable');
  const records=booruRecords(json);if(!records)throw new AppError('invalidFeed');
  return records.flatMap(x=>{const url=mediaURL(x.file_url||x.large_file_url,p.url);if(!x.id||!url||! /\.(?:jpe?g|png|webp|avif)(?:\?|$)/i.test(url))return [];
  const rating=({s:p.engine==='danbooru'?'suggestive':'safe',g:'safe',safe:'safe',general:'safe',sensitive:'suggestive',q:'suggestive',questionable:'suggestive',e:'adult',explicit:'adult'})[x.rating];if(!rating)return [];
@@ -46,7 +50,7 @@ export function booruURL(p,{tag='',page=1,purity='100',limit=24,key}={}){
 }
 export async function searchBooru(p,s,key,signal,page=1,{request=fetchJSON}={}){
  const count=Math.max(1,s.tags.length),u=booruURL(p,{tag:s.tags[(page-1)%count]||'',page:Math.ceil(page/count),purity:contentMask(s),key});
- try{return parseBooru(await request(u,signal),p);}catch(e){if([401,403].includes(e.status))throw new AppError('sourceAuthFailed');throw e;}
+ try{return parseBooru(await request(u,signal),p);}catch(e){if([401,403].includes(e.status))throw new AppError('sourceAuthFailed');if(e.code==='invalidFeed')throw new AppError('sourceAPIResponse');throw e;}
 }
 export async function detectSite(value,{request=fetchJSON,check=checkURL,signal}={}){
  const u=normalizeSite(value);await check(u.href);const match=knownSite(u.href);if(match)return match;

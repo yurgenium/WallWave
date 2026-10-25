@@ -1,5 +1,9 @@
-.floating-status#status{transition:background .15s,opacity .15s,visibility .15s}
-.floating-status#status[data-auto-hidden="true"]{opacity:0;visibility:hidden;pointer-events:none}
+.floating-status#status{visibility:visible;transition:background .15s,opacity .25s ease,visibility 0s}
+body[data-view="settings"] #status,body[data-view="settings"] #panelRestore{display:none!important}
+.floating-status#status[data-auto-hidden="true"]{opacity:0;visibility:hidden;pointer-events:none;transition:background .15s,opacity 1.2s linear,visibility 0s linear 1.2s}
+.panel-restore{position:fixed;right:2px;bottom:16px;z-index:41;width:14px;height:28px;min-width:0;padding:0;border:1px solid #526758;border-radius:5px;background:#202831;color:var(--accent);font-size:13px;line-height:1;opacity:.7}
+.panel-restore:hover,.panel-restore:focus-visible{opacity:1}
+.panel-restore[hidden]{display:none}
 .floating-status[data-expanded="false"]>:not(#jobText):not(#statusToggle):not(#message):not(.panel-critical){display:none!important}
 .floating-status #message:empty{display:none}.floating-status[data-expanded="false"]{padding:11px 14px}
 #statusDetails #automationInfo{grid-template-columns:1fr;gap:7px}.automation-card[hidden]{display:none!important}
@@ -10,4 +14,4 @@
 #helpSettings .diagnostic-help{border:0;margin:0;padding:16px;border:1px solid var(--border);border-radius:10px;max-width:900px}#helpSettings .diagnostic-help h3{font-size:17px}#helpSettings .diagnostic-help p{font-size:14px}
 .source-wizard-intro{margin-bottom:18px}.source-wizard-intro p{line-height:1.6}.source-advanced{margin-top:22px}.source-advanced>summary{cursor:pointer;padding:12px 0;color:var(--muted)}
 .site-connection-result{display:grid;gap:12px;min-width:0}.site-connection-result h3{margin:0}.site-connection-result a{overflow-wrap:anywhere}.source-wizard .source-key-field{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.source-wizard input{min-width:0}.source-wizard .site-check-result{line-height:1.6;overflow-wrap:anywhere}.source-wizard details{line-height:1.6}.source-wizard details select{width:100%;margin:7px 0}.source-request-link{padding:10px;border:1px solid var(--accent);border-radius:8px;text-align:center}
-@media(prefers-reduced-motion:reduce){.floating-status#status{transition:none}}
+/* Keep this opacity-only fade when reduced motion is enabled; the panel never moves. */

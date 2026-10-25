@@ -11,6 +11,7 @@ window.addEventListener('click',event=>{
 let panelListener,pendingPanel;ipcRenderer.on('wallwave:open-panel',(_,panel)=>{if(panel!=='hold')return;if(panelListener)panelListener(panel);else pendingPanel=panel;});
 contextBridge.exposeInMainWorld('wallwaveDesktop',{
  openLogs:()=>ipcRenderer.invoke('wallwave:open-logs'),
+ saveDiagnostics:()=>ipcRenderer.invoke('wallwave:save-diagnostics'),
  onOpenPanel:listener=>{if(typeof listener!=='function')return;panelListener=listener;if(pendingPanel){const panel=pendingPanel;pendingPanel=null;listener(panel);}},
  readClipboard:()=>{
   if(!pasteClick)return Promise.reject(Error('Paste button gesture required'));
