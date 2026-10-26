@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fork} from 'node:child_process';
 import {defaults,sharpModule} from './core.mjs';
+import {inheritConflictingMonitorFilters} from './public/monitor-content.js';
 
 async function fixture(t,{settings={},config={},itemRating='safe'}={}){
  const temp=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-features-')),data=path.join(temp,'library'),file=path.join(temp,'fixture.json');await fs.mkdir(path.join(data,'pending'),{recursive:true});await fs.mkdir(path.join(data,'thumbnails'));await fs.writeFile(file,JSON.stringify(config));
@@ -58,7 +59,7 @@ test('manual AI selection stops, including network transfers, when a game become
 test('diagnostics identify the exact monitor filter behind an unavailable wallpaper and keep the last failure',async t=>{
  const f=await fixture(t,{itemRating:'adult',settings:{purity:'111',monitors:{'screen-b':{rotation:false,rotationMinutes:60,purity:'100',tags:[]}}}});
  await f.post('apply',{id:'b'});let s=await f.wait(s=>!s.wallpaperAction);
- assert.equal(s.wallpaperResult.code,'notAvailable');
+ assert.equal(s.wallpaperResult.code,'wallpaperRatingBlocked');
  let report=await(await fetch(f.base+'/api/diagnostics')).json();
  const version=JSON.parse(await fs.readFile(new URL('./package.json',import.meta.url),'utf8')).version;
  assert.equal(report.version,version);assert.equal(report.schemaVersion,2);assert.equal(report.environment.platform,process.platform);
@@ -90,6 +91,25 @@ test('diagnostics attribute a download rejected after filter changes to the refr
  assert.equal(failure.error.stage,'downloadValidation');assert.equal(failure.error.rating,'adult');
  assert(report.history.operations.some(x=>x.action==='refresh'&&x.status==='success'));
  assert(!JSON.stringify(report).includes('example.com'));
+});
+
+test('reported 011/100 monitor conflict is explicit and opting into inheritance restores manual changes',async t=>{
+ const monitor={rotation:false,rotationMinutes:60,purity:'100',tags:[]};
+ const f=await fixture(t,{itemRating:'suggestive',settings:{purity:'011',monitors:{'screen-a':{...monitor,tags:['mountains']},'screen-b':monitor}},config:{activity:{cpuLoad:27,gpuLoad:91}}});
+ await f.post('apply',{id:'b'});let s=await f.wait(s=>!s.wallpaperAction);
+ assert.equal(s.wallpaperResult.code,'monitorContentConflict');
+ let report=await(await fetch(f.base+'/api/diagnostics')).json();
+ assert.equal(report.history.lastFailure.error.reason,'monitorFiltersConflict');assert.equal(report.configuration.purity,'011');
+ assert.equal(report.context.selection.eligible,2);assert(report.context.monitors.every(m=>m.purity==='000'&&m.configuredPurity==='100'&&m.selection.eligible===0));
+ await assert.rejects(fs.access(f.file+'.calls'),{code:'ENOENT'});
+ await f.post('next');s=await f.wait(s=>!s.wallpaperAction);assert.equal(s.wallpaperResult.code,'monitorContentConflict');
+ // The stored restrictions remain intact until the user selects the repair action.
+ assert.equal(s.settings.monitors['screen-a'].inheritPurity,undefined);
+ await f.post('settings',inheritConflictingMonitorFilters(s));await f.post('apply',{id:'b'});s=await f.wait(s=>!s.wallpaperAction);
+ assert.equal(s.wallpaperResult.code,'wallpaperChanged');assert.equal(s.settings.monitors['screen-a'].purity,'100');assert.equal(s.settings.monitors['screen-a'].inheritPurity,true);
+ report=await(await fetch(f.base+'/api/diagnostics')).json();assert(report.context.monitors.every(m=>m.purity==='011'&&m.inheritPurity));
+ await f.post('settings',{...s.settings,purity:'010'});await f.post('next');s=await f.wait(s=>!s.wallpaperAction);assert.equal(s.wallpaperResult.code,'wallpaperChanged');
+ const calls=(await fs.readFile(f.file+'.calls','utf8')).trim().split('\n').map(JSON.parse);assert(calls.some(x=>x.id==='screen-a'));assert(calls.some(x=>x.id==='screen-b'));
 });
 test('manual AI selection finishes through a brief CPU spike without discarding its batch',{timeout:20000},async t=>{
  const config={aiDelay:7000,activity:{cpuLoad:5,gpuLoad:0},items:[{id:'new',url:'https://example.com/new',preview:'https://example.com/new',width:800,height:600,rating:'safe',tags:[]}]};

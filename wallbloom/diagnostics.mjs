@@ -59,7 +59,7 @@ export function diagnosticContext(db,{monitors=[],monitorSettings,activeProfile=
   selection:selectionSummary(db,settings,db.current),
   monitors:monitors.map((monitor,index)=>{const effective=monitorSettings?.(monitor.id)||settings;
    return {index:index+1,width:monitor.width,height:monitor.height,
-    customSettings:!!db.settings.monitors?.[monitor.id],purity:contentMask(effective),
+    customSettings:!!db.settings.monitors?.[monitor.id],purity:contentMask(effective),configuredPurity:db.settings.monitors?.[monitor.id]?.purity||contentMask(settings),inheritPurity:!db.settings.monitors?.[monitor.id]||db.settings.monitors[monitor.id].inheritPurity===true,
     rotation:!!effective.rotation,tagsCount:effective.tags.length,excludedTagsCount:effective.excludedTags.length,
     selection:selectionSummary(db,effective,db.monitorCurrent?.[monitor.id])};}),
   backup:{available:!!backup,monitorCount:backup?.monitors?.length||0}};
@@ -78,7 +78,7 @@ function cleanContext(value={}){
    purity:typeof settings.purity==='string'&&/^[01]{3}$/.test(settings.purity)?settings.purity:undefined,
    hold:enums(settings.hold,['manual','timed','none']),fit:enums(settings.fit,['contain','cover','inside'])},
   selection:cleanSelection(value.selection),monitors:(Array.isArray(value.monitors)?value.monitors:[]).slice(0,64).map(m=>({
-   ...numericFields(m,['index','width','height','tagsCount','excludedTagsCount']),customSettings:m.customSettings===true,rotation:m.rotation===true,
+   ...numericFields(m,['index','width','height','tagsCount','excludedTagsCount']),customSettings:m.customSettings===true,rotation:m.rotation===true,inheritPurity:m.inheritPurity===true,configuredPurity:typeof m.configuredPurity==='string'&&/^[01]{3}$/.test(m.configuredPurity)?m.configuredPurity:undefined,
    purity:typeof m.purity==='string'&&/^[01]{3}$/.test(m.purity)?m.purity:undefined,selection:cleanSelection(m.selection)})),
   backup:{available:value.backup?.available===true,monitorCount:number(value.backup?.monitorCount)}};
 }

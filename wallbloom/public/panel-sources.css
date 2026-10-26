@@ -1,5 +1,6 @@
 .floating-status#status{visibility:visible;transition:background .15s,opacity .25s ease,visibility 0s}
 body[data-view="settings"] #status,body[data-view="settings"] #panelRestore{display:none!important}
+.monitor-content-warning{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;border-color:#b99054}.monitor-content-warning p{flex:1 1 320px;margin:0}.monitor-content-warning[hidden]{display:none}
 .floating-status#status[data-auto-hidden="true"]{opacity:0;visibility:hidden;pointer-events:none;transition:background .15s,opacity 1.2s linear,visibility 0s linear 1.2s}
 .panel-restore{position:fixed;right:2px;bottom:16px;z-index:41;width:14px;height:28px;min-width:0;padding:0;border:1px solid #526758;border-radius:5px;background:#202831;color:var(--accent);font-size:13px;line-height:1;opacity:.7}
 .panel-restore:hover,.panel-restore:focus-visible{opacity:1}
