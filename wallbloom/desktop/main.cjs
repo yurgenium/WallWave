@@ -28,7 +28,7 @@ ipcMain.handle('wallwave:save-diagnostics',async event=>{
  if(!window||event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==base+'/')throw Error('Diagnostics unavailable');
  const target=await dialog.showSaveDialog(window,{title:extra('Сохранить диагностику WallWave','Save WallWave diagnostics'),defaultPath:path.join(app.getPath('downloads'),'WallWave-diagnostics.json'),filters:[{name:'JSON',extensions:['json']}]});
  if(target.canceled||!target.filePath)return {canceled:true};
- await diagnosticLog?.flush();const response=await serviceFetch(base+'/api/diagnostics');if(!response.ok)throw Error('Diagnostics unavailable');
+ logDisplays();await diagnosticLog?.flush();const response=await serviceFetch(base+'/api/diagnostics');if(!response.ok)throw Error('Diagnostics unavailable');
  const report=await response.json();if(diagnosticLog){report.journal=mergeDiagnosticEvents(report.journal,diagnosticLog.snapshot());report.journal.mainWriterStatus=diagnosticLog.status();report.reproduction=incidentSummary(report.journal);}try{await fs.writeFile(target.filePath,JSON.stringify(report));}catch(error){diagnosticLog?.record('request.failed',{action:'diagnostics',phase:'save',error},'error');throw Error('Diagnostics could not be saved');}return {canceled:false};
 });
 app.setName('WallWave');app.setAppUserModelId('app.wallbloom.desktop');
