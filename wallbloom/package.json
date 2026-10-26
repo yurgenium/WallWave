@@ -1,6 +1,6 @@
 {
   "name": "wallbloom",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "private": true,
   "type": "module",
   "description": "Local wallpaper recommendations for Windows",
@@ -13,8 +13,8 @@
     "test": "node --test *.test.mjs *.test.cjs desktop/*.test.cjs",
     "check": "node tools/check-syntax.mjs",
     "icons": "node tools/create-icons.mjs",
-    "build:win": "node tools/create-icons.mjs && electron-builder --win nsis --x64",
-    "build:dir": "node tools/create-icons.mjs && electron-builder --win dir --x64"
+    "build:win": "node tools/create-diagnostic-manifest.mjs && node tools/create-icons.mjs && electron-builder --win nsis --x64",
+    "build:dir": "node tools/create-diagnostic-manifest.mjs && node tools/create-icons.mjs && electron-builder --win dir --x64"
   },
   "engines": {
     "node": ">=22"

@@ -20,6 +20,8 @@ try{
  await page.locator('#grid .card').first().waitFor();assert.equal(page.url(),'wallwave://app/');
  const ready=JSON.parse(await fs.readFile(path.join(data,'desktop-test-ready.json'),'utf8'));assert.equal(ready.base,'wallwave://app');
  await page.waitForFunction(()=>[...document.querySelectorAll('#grid .card img')].slice(0,4).every(img=>img.complete&&img.naturalWidth>0));
+ await app.evaluate(({BrowserWindow})=>{const contents=BrowserWindow.getAllWindows()[0].webContents;contents.emit('unresponsive');contents.emit('responsive');});
+ await page.evaluate(()=>window.wallwaveDesktop.diagnosticEvent({event:'renderer.exception',traceId:'d'.repeat(32),attributes:{errorName:'TypeError',frames:[{file:'app.js',line:20,column:3}],message:'PRIVATE_WALLPAPER_TITLE',url:'https://PRIVATE_SOURCE/?key=SECRET_TOKEN',preferences:{tags:['SECRET_INTEREST']}}}));
  let networkRequests=0;page.on('request',request=>{if(/^https?:/.test(request.url()))networkRequests++;});
  const timings=[];
  for(const index of [0,1,0,2,1,2]){
@@ -37,11 +39,11 @@ try{
   return(await fetch('/api/diagnostics')).json();
  });
  const version=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url),'utf8')).version;
- assert.equal(report.version,version);assert.equal(report.schemaVersion,2);assert.equal(report.history.lastFailure.action,'apply');assert.equal(report.history.lastFailure.error.reason,'itemMissing');
+ assert.equal(report.version,version);assert.equal(report.schemaVersion,3);assert.equal(report.history.lastFailure.action,'apply');assert.equal(report.history.lastFailure.error.reason,'itemMissing');
  const downloadedReport=path.join(temp,'downloaded-diagnostics.json');
  await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},downloadedReport);
  await page.locator('[data-view="settings"]').click();await page.locator('[data-settings-tab="help"]').click();
- await page.locator('a[download="WallWave-diagnostics.json"]').click();await page.waitForFunction(()=>document.querySelector('a[download="WallWave-diagnostics.json"]').getAttribute('aria-busy')==='false');const downloaded=JSON.parse(await fs.readFile(downloadedReport,'utf8'));assert.equal(downloaded.version,version);assert.equal(downloaded.history.lastFailure.error.reason,'itemMissing');
+ await page.locator('a[download="WallWave-diagnostics.json"]').click();await page.waitForFunction(()=>document.querySelector('a[download="WallWave-diagnostics.json"]').getAttribute('aria-busy')==='false');const downloaded=JSON.parse(await fs.readFile(downloadedReport,'utf8'));assert.equal(downloaded.version,version);assert.equal(downloaded.history.lastFailure.error.reason,'itemMissing');assert(downloaded.journal.events.some(x=>x.event==='renderer.unresponsive'));assert(downloaded.journal.events.some(x=>x.event==='renderer.responsive'));assert(downloaded.journal.events.some(x=>x.component==='renderer'&&x.traceId==='d'.repeat(32)));assert(downloaded.journal.events.some(x=>x.event==='configuration.changed'&&x.attributes.origin==='library.contentCategories'));for(const secret of ['PRIVATE_','SECRET_','\"purity\"','\"rating\"','\"vote\"'])assert(!JSON.stringify(downloaded).includes(secret));assert(downloaded.displayTopology.logicalDisplays.length>0);
  assert.equal(networkRequests,0,'local UI must never make HTTP/TCP requests');assert.deepEqual(errors,[]);
  console.log(JSON.stringify({ok:true,transport:'IPC',httpServer:false,networkRequests,ratingToggleMs:timings,diagnosticVersion:downloaded.version,diagnosticDownload:true}));
 }catch(error){console.error(error);throw error;}finally{

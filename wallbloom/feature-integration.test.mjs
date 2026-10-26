@@ -62,11 +62,11 @@ test('diagnostics identify the exact monitor filter behind an unavailable wallpa
  assert.equal(s.wallpaperResult.code,'wallpaperRatingBlocked');
  let report=await(await fetch(f.base+'/api/diagnostics')).json();
  const version=JSON.parse(await fs.readFile(new URL('./package.json',import.meta.url),'utf8')).version;
- assert.equal(report.version,version);assert.equal(report.schemaVersion,2);assert.equal(report.environment.platform,process.platform);
+ assert.equal(report.version,version);assert.equal(report.schemaVersion,3);assert.equal(report.environment.platform,process.platform);
  assert.equal(report.history.lastFailure.action,'apply');assert.equal(report.history.lastFailure.error.reason,'ratingBlocked');
  assert.equal(report.history.lastFailure.error.stage,'eligibility');assert.equal(report.history.lastFailure.error.monitor,2);
  assert.equal(report.context.selection.eligible,2);assert.equal(report.context.monitors[1].selection.eligible,0);
- assert.equal(report.context.monitors[1].selection.blocked.ratingBlocked,2);assert.equal(report.context.monitors[1].purity,'100');
+ assert.equal(report.context.monitors[1].selection.blocked.ratingBlocked,2);assert.equal(report.context.monitors[1].effectiveCategoryCount,1);
  await f.post('settings',{...s.settings,monitors:{}});await f.post('next');s=await f.wait(s=>!s.wallpaperAction);
  report=await(await fetch(f.base+'/api/diagnostics')).json();
  assert.equal(report.wallpaperResult.code,'wallpaperChanged',JSON.stringify(report.history));assert.equal(report.lastError,null);
@@ -88,7 +88,7 @@ test('diagnostics attribute a download rejected after filter changes to the refr
  await f.wait(s=>!s.job);
  const report=await(await fetch(f.base+'/api/diagnostics')).json(),failure=report.history.lastFailure;
  assert.equal(failure.action,'refresh');assert.equal(failure.code,'notAvailable');assert.equal(failure.error.reason,'ratingBlocked');
- assert.equal(failure.error.stage,'downloadValidation');assert.equal(failure.error.rating,'adult');
+ assert.equal(failure.error.stage,'downloadValidation');assert.equal(failure.error.rating,undefined);
  assert(report.history.operations.some(x=>x.action==='refresh'&&x.status==='success'));
  assert(!JSON.stringify(report).includes('example.com'));
 });
@@ -99,15 +99,15 @@ test('reported 011/100 monitor conflict is explicit and opting into inheritance 
  await f.post('apply',{id:'b'});let s=await f.wait(s=>!s.wallpaperAction);
  assert.equal(s.wallpaperResult.code,'monitorContentConflict');
  let report=await(await fetch(f.base+'/api/diagnostics')).json();
- assert.equal(report.history.lastFailure.error.reason,'monitorFiltersConflict');assert.equal(report.configuration.purity,'011');
- assert.equal(report.context.selection.eligible,2);assert(report.context.monitors.every(m=>m.purity==='000'&&m.configuredPurity==='100'&&m.selection.eligible===0));
+ assert.equal(report.history.lastFailure.error.reason,'monitorFiltersConflict');assert.equal(report.configuration.enabledCategoryCount,2);
+ assert.equal(report.context.selection.eligible,2);assert(report.context.monitors.every(m=>m.effectiveCategoryCount===0&&m.configuredCategoryCount===1&&m.selection.eligible===0));
  await assert.rejects(fs.access(f.file+'.calls'),{code:'ENOENT'});
  await f.post('next');s=await f.wait(s=>!s.wallpaperAction);assert.equal(s.wallpaperResult.code,'monitorContentConflict');
  // The stored restrictions remain intact until the user selects the repair action.
  assert.equal(s.settings.monitors['screen-a'].inheritPurity,undefined);
  await f.post('settings',inheritConflictingMonitorFilters(s));await f.post('apply',{id:'b'});s=await f.wait(s=>!s.wallpaperAction);
  assert.equal(s.wallpaperResult.code,'wallpaperChanged');assert.equal(s.settings.monitors['screen-a'].purity,'100');assert.equal(s.settings.monitors['screen-a'].inheritPurity,true);
- report=await(await fetch(f.base+'/api/diagnostics')).json();assert(report.context.monitors.every(m=>m.purity==='011'&&m.inheritPurity));
+ report=await(await fetch(f.base+'/api/diagnostics')).json();assert(report.context.monitors.every(m=>m.effectiveCategoryCount===2&&m.inheritPurity));
  await f.post('settings',{...s.settings,purity:'010'});await f.post('next');s=await f.wait(s=>!s.wallpaperAction);assert.equal(s.wallpaperResult.code,'wallpaperChanged');
  const calls=(await fs.readFile(f.file+'.calls','utf8')).trim().split('\n').map(JSON.parse);assert(calls.some(x=>x.id==='screen-a'));assert(calls.some(x=>x.id==='screen-b'));
 });

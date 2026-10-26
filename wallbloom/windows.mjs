@@ -3,16 +3,18 @@ import {AppError} from './core.mjs';
 import {fileURLToPath} from 'node:url';
 import {readFileSync} from 'node:fs';
 import os from 'node:os';
+let diagnosticSink=null;export function setDiagnosticSink(sink){diagnosticSink=typeof sink==='function'?sink:null;}
+function nativeDiagnostic(event,attributes){try{diagnosticSink?.(event,attributes);}catch{}}
 let lastCpu=os.cpus().map(c=>({...c.times}));
 function cpuUsage(){const next=os.cpus().map(c=>({...c.times}));let total=0,idle=0;for(let i=0;i<next.length;i++){const prev=lastCpu[i]||next[i];for(const k of Object.keys(next[i]))total+=next[i][k]-prev[k];idle+=next[i].idle-prev.idle;}lastCpu=next;return total?Math.max(0,Math.min(100,100*(1-idle/total))):0;}
 export async function openWallhavenAccount(){if(process.platform!=='win32')throw new AppError('windowsUnavailable');await powershell("Start-Process -FilePath 'https://wallhaven.cc/settings/account' -WindowStyle Normal");}
-export function powershell(script,env={},operation='unknown'){return new Promise((resolve,reject)=>{
+export function powershell(script,env={},operation='unknown'){const started=performance.now();return new Promise((resolve,reject)=>{
  const p=spawn('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,env:{...process.env,...env}});let output='',stderr='',timedOut=false;
  const failure=(reason,code,nativeSystemCode)=>{const error=new AppError('windowsUnavailable');error.diagnostic={reason,stage:'native',nativeOperation:operation,exitCode:code,nativeSystemCode,hresult:stderr.match(/\b0x[0-9a-f]{8}\b/i)?.[0]};return error;};
  const timer=setTimeout(()=>{timedOut=true;p.kill();},10000);
  p.stdout.on('data',b=>output+=b);p.stderr.on('data',b=>{if(stderr.length<16384)stderr+=b;});
- p.on('error',error=>{clearTimeout(timer);reject(failure('nativeStartFailed',undefined,error.code));});
- p.on('close',code=>{clearTimeout(timer);code===0&&!timedOut?resolve(output):reject(failure(timedOut?'nativeTimeout':'nativeCommandFailed',code));});
+ p.on('error',error=>{clearTimeout(timer);const failureError=failure('nativeStartFailed',undefined,error.code);nativeDiagnostic('native.failed',{nativeOperation:operation,durationMs:Math.round(performance.now()-started),error:failureError});reject(failureError);});
+ p.on('close',code=>{clearTimeout(timer);if(code===0&&!timedOut){nativeDiagnostic('native.finished',{nativeOperation:operation,durationMs:Math.round(performance.now()-started),exitCode:code});resolve(output);}else{const error=failure(timedOut?'nativeTimeout':'nativeCommandFailed',code);nativeDiagnostic('native.failed',{nativeOperation:operation,durationMs:Math.round(performance.now()-started),exitCode:code,error});reject(error);}});
 });}
 const native=`Add-Type @'
 using System;using System.Text;using System.Runtime.InteropServices;public class WB { [StructLayout(LayoutKind.Sequential)]public struct L{public uint cbSize;public uint dwTime;}[DllImport("user32.dll")]public static extern bool GetLastInputInfo(ref L l);[DllImport("shell32.dll")]public static extern int SHQueryUserNotificationState(out int s);[DllImport("user32.dll",CharSet=CharSet.Unicode)]public static extern bool SystemParametersInfo(int a,int b,string c,int d);[DllImport("user32.dll",CharSet=CharSet.Unicode,EntryPoint="SystemParametersInfoW")]public static extern bool GetWallpaper(int a,int b,StringBuilder c,int d);public static uint Idle(){L l=new L();l.cbSize=(uint)Marshal.SizeOf(l);if(!GetLastInputInfo(ref l))throw new Exception();return unchecked((uint)Environment.TickCount-l.dwTime);}}

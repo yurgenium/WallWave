@@ -37,7 +37,7 @@ export function setupMonitorContentNotice({grid,getState,action,t,openSettings})
  const section=document.createElement('section'),message=document.createElement('p'),repair=document.createElement('button'),settings=document.createElement('button');
  section.id='monitorContentWarning';section.className='panel monitor-content-warning';section.hidden=true;section.setAttribute('role','status');section.setAttribute('aria-live','polite');
  repair.id='useGlobalMonitorContent';repair.type=settings.type='button';let saving=false;
- repair.onclick=async()=>{if(saving)return;saving=true;repair.disabled=true;try{await action('settings',inheritConflictingMonitorFilters(getState()));}finally{saving=false;update(getState());}};
+ repair.onclick=async()=>{if(saving)return;saving=true;repair.disabled=true;try{await action('settings',inheritConflictingMonitorFilters(getState()),'monitor.useGlobalFilter');}finally{saving=false;update(getState());}};
  settings.onclick=openSettings;section.append(message,repair,settings);grid.before(section);
  function update(state){if(!state)return;const conflicts=contentConflicts(state);section.hidden=!conflicts.length;message.textContent=t('monitorContentConflictHelp').replace('{monitors}',conflicts.map(m=>m.index).join(', '));repair.textContent=t('monitorUseCommonContent');settings.textContent=t('monitorConfigureContent');repair.disabled=saving||!!state.wallpaperAction||['import','export','cleanup'].includes(state.job?.kind);}
  return {update};

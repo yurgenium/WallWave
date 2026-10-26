@@ -8,8 +8,8 @@ export class AISession{
   this.child=fork(new URL('./ai-worker.mjs',import.meta.url),[dir,'--service'],{env:{...process.env,WALLBLOOM_AI:mode,...modelsDir&&{WALLWAVE_MODEL_CACHE:modelsDir}},silent:true,windowsHide:true});
   this.child.stdout.resume();this.stderr='';this.child.stderr.on('data',b=>this.stderr=(this.stderr+b).slice(-4000));
   this.startup=setTimeout(()=>this.close('aiUnavailable'),30000);
-  this.child.on('message',m=>{if(this.closed)return;if(m.ready){clearTimeout(this.startup);this.readyResolve();}if(m.code)onEvent(m.code,m.network);if(this.pending&&m.request===this.pending.id){const p=this.pending;this.pending=null;clearTimeout(p.timer);if(m.error){this.stderr=(this.stderr+'\n'+(m.detail||'')).slice(-4000);p.reject(new AppError('aiUnavailable'));}else p.resolve(m);}});
-  this.child.on('error',()=>this.close('aiUnavailable'));this.child.on('exit',()=>this.close('aiUnavailable'));
+  this.child.on('message',m=>{if(this.closed)return;if(m.ready){clearTimeout(this.startup);this.readyResolve();}if(m.code)onEvent(m.code,m.network);if(this.pending&&m.request===this.pending.id){const p=this.pending;this.pending=null;clearTimeout(p.timer);if(m.error){onEvent('aiUnavailable',{diagnosticError:{name:'Error',code:'aiUnavailable',stack:m.detail}});this.stderr=(this.stderr+'\n'+(m.detail||'')).slice(-4000);p.reject(new AppError('aiUnavailable'));}else p.resolve(m);}});
+  this.child.on('error',error=>{if(!this.closed)onEvent('aiUnavailable',{diagnosticError:error});this.close('aiUnavailable');});this.child.on('exit',code=>{if(!this.closed)onEvent('aiUnavailable',{exitCode:code});this.close('aiUnavailable');});
   this.abort=()=>this.close('aiPaused');this.signal=signal;signal?.addEventListener('abort',this.abort,{once:true});
   this.timer=setInterval(()=>{if(!allowed()||os.freemem()<2*1024**3)this.close('aiPaused');},1000);this.timer.unref();
   try{os.setPriority(this.child.pid,os.constants.priority.PRIORITY_BELOW_NORMAL);}catch{}

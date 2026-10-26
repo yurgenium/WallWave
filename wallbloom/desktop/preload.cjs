@@ -12,6 +12,7 @@ let panelListener,pendingPanel;ipcRenderer.on('wallwave:open-panel',(_,panel)=>{
 contextBridge.exposeInMainWorld('wallwaveDesktop',{
  openLogs:()=>ipcRenderer.invoke('wallwave:open-logs'),
  saveDiagnostics:()=>ipcRenderer.invoke('wallwave:save-diagnostics'),
+ diagnosticEvent:record=>ipcRenderer.send('wallwave:diagnostic-event',record),
  onOpenPanel:listener=>{if(typeof listener!=='function')return;panelListener=listener;if(pendingPanel){const panel=pendingPanel;pendingPanel=null;listener(panel);}},
  readClipboard:()=>{
   if(!pasteClick)return Promise.reject(Error('Paste button gesture required'));

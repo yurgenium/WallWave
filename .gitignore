@@ -68,3 +68,10 @@ layout-rollback.json
 /WallWave/
 /WallWave.exe
 /archive/
+
+# Sanitized runtime journals and generated bug reports are still private files.
+diagnostic-events/
+*.diagnostic-events/
+diagnostic-history.json*
+WallWave-diagnostics.json
+*.jsonl
