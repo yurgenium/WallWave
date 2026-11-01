@@ -59,7 +59,7 @@ function cleanAttributes(input={}){
   else if(key==='frames'&&Array.isArray(value))result.frames=value.filter(x=>appFiles.has(x?.file)).slice(0,12).map(x=>({file:x.file,line:Number.isFinite(x.line)?x.line:0,column:Number.isFinite(x.column)?x.column:0}));
   else if(key==='errorName')result.errorName=safeCode(value);
   else if(key==='category'&&['api','preview','metadata','original','other','thumbnail','staticAsset','fullPreview'].includes(value))result.category=value;
-  else if(key==='nativeOperation'&&['activity','desktopInfo','listMonitors','applyMonitor','applyWallpaper','unknown'].includes(value))result.nativeOperation=value;
+  else if(key==='nativeOperation'&&['activity','desktopInfo','listMonitors','applyMonitor','applyWallpaper','nativeHost','unknown'].includes(value))result.nativeOperation=value;
   else if(key==='trigger'&&['startup','wake','fullscreen','schedule','interval','holdExpired'].includes(value))result.trigger=value;
   else if(key==='coordinateSpace'&&['logical','physical'].includes(value))result.coordinateSpace=value;
   else if(key==='crashReason'&&['clean-exit','abnormal-exit','killed','crashed','oom','launch-failed','integrity-failure','memory-eviction','unknown'].includes(value))result.crashReason=value;

@@ -10,3 +10,18 @@ test('failed native commands expose useful codes without persisting private stde
   for(const secret of ['PRIVATE_USER','SECRET_KEY','photo.jpg'])assert(!JSON.stringify(safe).includes(secret));return true;
  });
 });
+
+test('long-lived host and one-shot calls keep Cyrillic paths intact', {skip:process.platform!=='win32'},async()=>{
+ const {native}=await import('./windows.mjs');
+ const value='C:\\Users\\Юрий\\Обои\\фото.jpg';
+ assert.equal((await native('$env:WALLWAVE_TEST_VALUE',{WALLWAVE_TEST_VALUE:value},'unknown')).trim(),value);
+ assert.equal((await powershell('$env:WALLWAVE_TEST_VALUE',{WALLWAVE_TEST_VALUE:value},'unknown')).trim(),value);
+});
+
+test('activity checks reuse one host process', {skip:process.platform!=='win32'},async()=>{
+ const {activity,native}=await import('./windows.mjs');
+ const first=await activity(),second=await activity();
+ assert.equal(first.supported,true);assert.equal(second.supported,true);assert.equal(typeof second.idle,'number');
+ const pid=async()=>(await native('$PID',{},'unknown')).trim();
+ assert.equal(await pid(),await pid());
+});
