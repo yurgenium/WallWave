@@ -69,6 +69,15 @@ layout-rollback.json
 /WallWave.exe
 /archive/
 
+# Android local SDK, build products and signing secrets.
+android/.gradle/
+android/**/build/
+android/local.properties
+android/keystore.properties
+android/*.jks
+android/*.keystore
+android/releases/
+
 # Sanitized runtime journals and generated bug reports are still private files.
 diagnostic-events/
 *.diagnostic-events/
