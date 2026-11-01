@@ -19,7 +19,7 @@ async function fixture(t){
  await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings,providers:[{id:'personal',type:'feed',name:'PRIVATE_SOURCE_NAME',url:'https://private.example/feed?token=SECRET_API_KEY',enabled:true}],items:[{id:'PRIVATE_IMAGE_ID',title:'PRIVATE_IMAGE_TITLE',tags:['SECRET_IMAGE_TAG'],provider:'personal',rating:'safe',downloaded:true,thumbnailVersion:2,vote:'like'}],pages:{}}));
  let child,base,stderr='';
  async function start(){
-  child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_PORT:'0',WALLBLOOM_NATIVE_FIXTURE:native},silent:true,windowsHide:true});
+  child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_DATA_DIR:data,WALLWAVE_PORT:'0',WALLWAVE_NATIVE_FIXTURE:native},silent:true,windowsHide:true});
   child.stdout.resume();child.stderr.on('data',bytes=>stderr+=bytes);
   const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(stderr)));});base='http://127.0.0.1:'+port;
  }
@@ -27,7 +27,7 @@ async function fixture(t){
  await start();t.after(async()=>{await stop();await fs.rm(temp,{recursive:true,force:true});});
  const state=async()=>await(await fetch(base+'/api/state')).json();
  return {data,temp,state,report:async()=>await(await fetch(base+'/api/diagnostics')).json(),async restart(){await stop();await start();},async post(route,body,trace,origin='library'){
-  const s=await state(),response=await fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token,'X-Wallwave-Trace':trace,'X-Wallwave-Origin':origin},body:JSON.stringify(body)});
+  const s=await state(),response=await fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':s.token,'X-Wallwave-Trace':trace,'X-Wallwave-Origin':origin},body:JSON.stringify(body)});
   assert.equal(response.status,200,await response.text());
  },async wait(){for(let i=0;i<100;i++){const s=await state();if(!s.wallpaperAction&&!s.job)return s;await new Promise(r=>setTimeout(r,20));}throw Error('Operation timeout');},async missingThumbnail(){await fs.rm(path.join(data,'thumbnails','PRIVATE_IMAGE_ID.jpg'));const r=await fetch(base+'/image/PRIVATE_IMAGE_ID');assert.equal(r.status,404);}};
 }

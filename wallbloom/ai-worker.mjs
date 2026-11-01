@@ -5,7 +5,7 @@ import {embeddingVersion,validEmbedding} from './visual-ai.mjs';
 const dir=process.argv[2];
 const {env,AutoProcessor,CLIPVisionModelWithProjection,RawImage}=await import('@huggingface/transformers');
 env.cacheDir=process.env.WALLWAVE_MODEL_CACHE||path.join(dir,'models');env.allowLocalModels=false;
-const threads=process.env.WALLBLOOM_AI==='eco'?1:2;
+const threads=process.env.WALLWAVE_AI==='eco'?1:2;
 env.backends.onnx.wasm.numThreads=threads;
 const modelId='Xenova/clip-vit-base-patch32';
 const cachedFiles=await Promise.all(['config.json','preprocessor_config.json','onnx/vision_model_quantized.onnx'].map(async file=>{try{return (await fs.stat(path.join(env.cacheDir,modelId,file))).size>0;}catch{return false;}}));

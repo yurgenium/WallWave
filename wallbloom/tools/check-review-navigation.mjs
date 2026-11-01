@@ -13,7 +13,7 @@ await fs.mkdir(path.join(data,'pending'),{recursive:true});await fs.mkdir(path.j
 const bytes=await(await sharpModule())({create:{width:800,height:600,channels:3,background:'#438978'}}).jpeg().toBuffer();
 const items=[];for(let i=0;i<24;i++){const id='review-'+i;for(const folder of ['pending','thumbnails'])await fs.writeFile(path.join(data,folder,id+'.jpg'),bytes);items.push({id,provider:'fixture',downloaded:true,thumbnailVersion:2,size:bytes.length,rating:'safe',tags:['nature'],width:800,height:600,...i<18?{vote:'deferred'}:{}});}
 await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,rotation:false},providers:[{id:'fixture',type:'feed',name:'Fixture',url:'https://fixture.example/feed',enabled:true}],items,collections:[{id:'fixture-folder',name:'Nature',items:items.map(x=>x.id),created:Date.now()}],pages:{}}));
-const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_PORT:'0'},silent:true,windowsHide:true});
+const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_DATA_DIR:data,WALLWAVE_PORT:'0'},silent:true,windowsHide:true});
 child.stdout.resume();let stderr='';child.stderr.on('data',b=>stderr+=b);let browser,releaseVotes;
 try{
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.on('exit',()=>reject(Error(stderr)));});

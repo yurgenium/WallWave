@@ -15,7 +15,7 @@ const items=['first','second'].map(id=>({id,provider:'local',title:id,downloaded
 for(const item of items)for(const folder of ['pending','thumbnails'])await fs.writeFile(path.join(data,folder,item.id+'.jpg'),bytes);
 const monitor={rotation:false,rotationMinutes:60,purity:'100',tags:[]};
 await fs.writeFile(fixture,'{}');await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,purity:'111',monitors:{'screen-a':monitor,'screen-b':monitor}},providers:[{id:'local',type:'local',folder:temp,enabled:true}],items,pages:{}}));
-const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_PORT:'0',WALLBLOOM_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});
+const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_DATA_DIR:data,WALLWAVE_PORT:'0',WALLWAVE_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});
 child.stdout.resume();let output='',browser;child.stderr.on('data',b=>output+=b);
 try{
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(output)));}),base='http://127.0.0.1:'+port;

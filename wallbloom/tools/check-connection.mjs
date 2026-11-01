@@ -11,7 +11,7 @@ const temp=await fs.mkdtemp(path.join(os.tmpdir(),'wallwave-connection-')),data=
 await fs.mkdir(path.join(data,'pending'),{recursive:true});await fs.writeFile(fixture,'{}');
 await(await sharpModule())({create:{width:800,height:600,channels:3,background:'#345678'}}).jpeg().toFile(path.join(data,'pending','fixture.jpg'));
 await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:defaults,providers:[{id:'local',type:'local',enabled:true,name:'Fixture',folder:temp}],items:[{id:'fixture',provider:'local',title:'Test wallpaper',downloaded:true,rating:'safe',tags:['nature'],width:800,height:600}],pages:{}}));
-const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_PORT:'0',WALLBLOOM_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});child.stdout.resume();child.stderr.resume();let browser;
+const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_DATA_DIR:data,WALLWAVE_PORT:'0',WALLWAVE_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});child.stdout.resume();child.stderr.resume();let browser;
 try{
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error('Service exited')));}),base='http://127.0.0.1:'+port,state=await(await fetch(base+'/api/state')).json();
  browser=await chromium.launch({channel:'msedge',headless:true});

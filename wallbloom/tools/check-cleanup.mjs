@@ -15,10 +15,10 @@ const items=[],sharp=await sharpModule();for(let i=0;i<5;i++){
  const bytes=await sharp({create:{width:800,height:600,channels:3,background:{r:20+i*30,g:100+i*20,b:80}}}).jpeg().toBuffer();Object.assign(x,await visualFingerprint(bytes),{bytes:bytes.length});for(const file of [imagePath(data,x),sourcePath(data,x),path.join(data,'thumbnails',x.id+'.jpg')])await fs.writeFile(file,bytes);items.push(x);
 }
 await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,ai:'off',rotation:false,autoRefresh:false,tags:[]},providers:[{id:'on',type:'local',name:'On source',enabled:true,folder:personal},{id:'own',type:'local',name:'Own source',enabled:true,folder:personal}],items,pages:{}}));
-const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_NATIVE_FIXTURE:fixture,WALLBLOOM_PORT:'0'},silent:true,windowsHide:true});child.stdout.resume();let stderr='';child.stderr.on('data',b=>stderr+=b);let browser;
+const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_DATA_DIR:data,WALLWAVE_NATIVE_FIXTURE:fixture,WALLWAVE_PORT:'0'},silent:true,windowsHide:true});child.stdout.resume();let stderr='';child.stderr.on('data',b=>stderr+=b);let browser;
 try{
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(stderr)));}),base='http://127.0.0.1:'+port,get=async()=>await(await fetch(base+'/api/state')).json();let state=await get();
- const request=async(route,value)=>{const r=await fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:JSON.stringify(value)});return {status:r.status,...await r.json()};};
+ const request=async(route,value)=>{const r=await fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':state.token},body:JSON.stringify(value)});return {status:r.status,...await r.json()};};
  const post=async(route,value)=>{const result=await request(route,value);assert.equal(result.status,200,JSON.stringify(result));return result;};
  assert.equal((await request('cleanup-preview',{kind:'provider',providerId:'own'})).error,'cleanupSourceEnabled');
  await post('apply',{id:'cleanup0'});for(let i=0;i<100&&(await get()).job;i++)await new Promise(r=>setTimeout(r,50));

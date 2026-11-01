@@ -18,7 +18,7 @@ const items=Array.from({length:821},(_,i)=>({id:'gallery-'+i,provider:'local',ti
 await Promise.all(items.flatMap(x=>['thumbnails','pending'].map(folder=>fs.writeFile(path.join(data,folder,x.id+'.jpg'),bytes))));
 await fs.writeFile(fixture,JSON.stringify({activity:{fullscreen:true},monitors:[]}));
 await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,ai:'off',rotation:false},providers:[{id:'local',name:'Fixture',type:'local',folder:temp,enabled:true}],items,pages:{}}));
-const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_DATA_DIR:data,WALLBLOOM_PORT:'0',WALLBLOOM_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});
+const child=fork(new URL('../server.mjs',import.meta.url),[],{execArgv:['--import',new URL('test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_DATA_DIR:data,WALLWAVE_PORT:'0',WALLWAVE_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});
 child.stdout.resume();let stderr='',browser;
 child.stderr.on('data',b=>stderr+=b);
 try{
@@ -38,7 +38,7 @@ try{
   new MutationObserver(records=>{for(const r of records)for(const n of r.removedNodes)if(n.matches?.('.card'))window.galleryMoves.push(n.dataset.itemId);}).observe(document.getElementById('grid'),{childList:true});
  });
  const state=await(await fetch(base+'/api/state')).json();
- const response=await fetch(base+'/api/vote',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:JSON.stringify({id:'gallery-5',vote:'neutral'})});
+ const response=await fetch(base+'/api/vote',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':state.token},body:JSON.stringify({id:'gallery-5',vote:'neutral'})});
  assert.equal(response.status,200);
  await page.waitForFunction(()=>document.querySelector('[data-item-id="gallery-5"] [data-vote="neutral"]').classList.contains('selected'));
  await page.waitForFunction(imagesLoaded);

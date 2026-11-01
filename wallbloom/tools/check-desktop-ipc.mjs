@@ -15,7 +15,7 @@ await Promise.all(items.flatMap(x=>['pending','thumbnails'].map(folder=>fs.write
 await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,purity:'111'},providers:[{id:'local',name:'Fixture',type:'local',folder:temp,enabled:true}],items,pages:{}}));
 const executablePath=process.argv[3]?path.resolve(process.argv[3]):own('electron');let app;
 try{
- app=await _electron.launch({executablePath,args:process.argv[3]?[]:[path.resolve(new URL('..',import.meta.url).pathname.slice(1))],env:{...process.env,WALLBLOOM_DESKTOP_TEST:'1',WALLBLOOM_DESKTOP_TEST_HOME:temp,WALLBLOOM_DATA_DIR:data,WALLBLOOM_DESKTOP_NO_HTTP:'1'},timeout:30000});
+ app=await _electron.launch({executablePath,args:process.argv[3]?[]:[path.resolve(new URL('..',import.meta.url).pathname.slice(1))],env:{...process.env,WALLWAVE_DESKTOP_TEST:'1',WALLWAVE_DESKTOP_TEST_HOME:temp,WALLWAVE_DATA_DIR:data,WALLWAVE_DESKTOP_NO_HTTP:'1'},timeout:30000});
  const page=await app.firstWindow(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.locator('#grid .card').first().waitFor();assert.equal(page.url(),'wallwave://app/');
  const ready=JSON.parse(await fs.readFile(path.join(data,'desktop-test-ready.json'),'utf8'));assert.equal(ready.base,'wallwave://app');
@@ -34,7 +34,7 @@ try{
  // Exercise the downloadable report without applying any real desktop wallpaper.
  const report=await page.evaluate(async()=>{
   const state=await(await fetch('/api/state')).json();
-  await fetch('/api/apply',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:JSON.stringify({id:'missing-diagnostic-fixture'})});
+  await fetch('/api/apply',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':state.token},body:JSON.stringify({id:'missing-diagnostic-fixture'})});
   for(let i=0;i<50;i++){const next=await(await fetch('/api/state')).json();if(!next.wallpaperAction)break;await new Promise(r=>setTimeout(r,20));}
   return(await fetch('/api/diagnostics')).json();
  });
@@ -47,6 +47,6 @@ try{
  assert.equal(networkRequests,0,'local UI must never make HTTP/TCP requests');assert.deepEqual(errors,[]);
  console.log(JSON.stringify({ok:true,transport:'IPC',httpServer:false,networkRequests,ratingToggleMs:timings,diagnosticVersion:downloaded.version,diagnosticDownload:true}));
 }catch(error){console.error(error);throw error;}finally{
- if(app){const proc=app.process(),exited=new Promise(resolve=>proc.exitCode!==null?resolve():proc.once('exit',resolve));const closed=app.waitForEvent('close',{timeout:15000});await app.evaluate(()=>globalThis.__wallbloomTest.beginQuit());await closed;await exited;}
+ if(app){const proc=app.process(),exited=new Promise(resolve=>proc.exitCode!==null?resolve():proc.once('exit',resolve));const closed=app.waitForEvent('close',{timeout:15000});await app.evaluate(()=>globalThis.__wallwaveTest.beginQuit());await closed;await exited;}
  await fs.rm(temp,{recursive:true,force:true,maxRetries:30,retryDelay:100});
 }
