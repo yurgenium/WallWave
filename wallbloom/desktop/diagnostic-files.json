@@ -25,6 +25,8 @@
   "local-transport.cjs",
   "main.cjs",
   "monitor-content.js",
+  "monitor-layout.js",
+  "native-host.mjs",
   "network.mjs",
   "orientation.mjs",
   "panel-source-strings.js",
