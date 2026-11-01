@@ -1,0 +1,67 @@
+/* Settings → Monitors: scaled screen map, mode switch and per-screen form. */
+.monitor-panel{display:grid;gap:14px}
+.monitor-mode{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px}
+.monitor-mode-option{flex:1 1 240px}
+.monitor-mode legend{font-weight:600;margin-bottom:8px;padding:0}
+.monitor-mode-option{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:#151a20;cursor:pointer}
+.monitor-mode-option:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,#151a20)}
+.monitor-mode-option:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.monitor-mode-option input{width:auto;margin-top:3px;accent-color:var(--accent)}
+.monitor-mode-copy{display:grid;gap:3px}
+.monitor-mode-copy small{font-size:12px;line-height:1.35}
+
+.monitor-map-wrap{display:flex;justify-content:center;padding:18px 12px;border-radius:12px;background:#0d1115;border:1px solid var(--border)}
+.monitor-map{position:relative;max-width:100%;margin:0 auto}
+.monitor-tile{position:absolute;box-sizing:border-box;padding:3px;border:0;background:transparent;cursor:pointer;border-radius:8px}
+.monitor-screen{position:absolute;inset:3px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:6px;background:#1d242c;border:2px solid #3a434e;transition:border-color .15s,box-shadow .15s}
+.monitor-screen img{width:100%;height:100%;object-fit:cover;display:block}
+.monitor-empty{font-size:11px;color:var(--muted);padding:4px;text-align:center}
+.monitor-tile:hover .monitor-screen{border-color:#5a6573}
+.monitor-tile[aria-pressed="true"] .monitor-screen{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.monitor-tile:focus-visible{outline:none}
+.monitor-tile:focus-visible .monitor-screen{box-shadow:0 0 0 3px var(--accent)}
+.monitor-label{position:absolute;left:9px;bottom:9px;right:9px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;pointer-events:none}
+.monitor-label>span{font-size:11px;line-height:1;padding:4px 6px;border-radius:5px;background:#0d1115d9;color:#edf2f5;white-space:nowrap}
+.monitor-label .monitor-number{font-size:13px;font-weight:700;min-width:12px;text-align:center}
+.monitor-tile[aria-pressed="true"] .monitor-number{background:var(--accent);color:#0d1115}
+.monitor-label .monitor-primary,.monitor-label .monitor-rotation{color:var(--accent)}
+.same-mode .monitor-label .monitor-rotation{display:none}
+.monitor-map-hint{margin:-4px 0 0;font-size:12px;text-align:center}
+
+.monitor-form{margin:0}
+.monitor-form h3{margin-top:0}
+.monitor-form .check{display:flex}
+.monitor-form .check input{width:auto}
+.monitor-same-note{margin:0 0 6px;font-size:13px}
+.monitor-categories{border:0;padding:0;margin:4px 0 12px}
+.monitor-categories legend{padding:0;margin-bottom:8px}
+.monitor-categories:disabled{opacity:.45}
+.category-toggles{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--border);border-radius:10px;background:#151a20}
+.category-toggles .purity-button{min-width:84px;display:inline-flex;justify-content:center;border-radius:7px}
+.category-toggles .purity-button[aria-pressed="true"]{background:#3b414e;color:#edf2f5;box-shadow:inset 0 0 0 1px #575e6c}
+.category-toggles .purity-button[aria-pressed="true"].purity-0{color:var(--accent)}
+.category-toggles .purity-button.globally-off{text-decoration:line-through;text-decoration-color:#ffffff55}
+.monitor-warning{margin:0 0 12px;padding:8px 10px;border-radius:8px;background:#3a2a17;color:#ffd6a0;font-size:13px}
+.monitor-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.monitor-actions .primary{background:var(--accent);color:#0d1115;border-color:transparent;font-weight:600}
+.monitor-saved{font-size:12px}
+
+/* "Apply to…" menu next to the Apply button on cards. */
+.apply-target-toggle{padding:7px 9px;line-height:1}
+.apply-target-menu{position:fixed;z-index:1000;min-width:230px;display:grid;gap:2px;padding:6px;border:1px solid var(--border);border-radius:10px;background:#1b2028;box-shadow:0 12px 30px #0008}
+.apply-target-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border:0;background:transparent;border-radius:6px;font-size:13px;white-space:nowrap}
+.apply-target-item:hover,.apply-target-item:focus-visible{background:#2a313b}
+.screen-icon{display:inline-block;border:1.5px solid currentColor;border-radius:2px;opacity:.85;flex:none}
+.screen-icon-group{display:inline-flex;align-items:flex-end;gap:2px;flex:none}
+
+@media (max-width:600px){
+  .monitor-map-wrap{padding:12px 6px}
+  .monitor-label{left:6px;bottom:6px;right:6px}
+  .monitor-label .monitor-size,.monitor-label .monitor-rotation{display:none}
+  .category-toggles .purity-button{min-width:0;flex:1}
+  .category-toggles{display:flex}
+}
+#monitorSettings .monitor-mode-option{margin:0}
+.monitor-form input[type=number]{max-width:180px}
+@media (max-width:600px){.monitor-empty,.monitor-label .monitor-primary{display:none}}
+.apply-target-menu[hidden]{display:none}

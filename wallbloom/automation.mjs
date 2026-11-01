@@ -7,8 +7,9 @@ export function eligible(db,settings=visibleSettings(db)){
  const members=db.rotationCollection?new Set(db.collections?.find(c=>c.id===db.rotationCollection)?.items||[]):null;
  return db.items.filter(x=>{if(members&&!members.has(x.id))return false;const rule=db.settings.cleanupAfterShows?.[x.vote||'pending'];return x.downloaded&&(members?.has(x.id)||!rule?.enabled||(x.showCount||0)<rule.shows)&&(members?.has(x.id)||x.vote||!db.providers||db.providers.some(p=>p.id===x.provider&&p.enabled))&&allowed(x,settings)&&!['ban','dislike'].includes(x.vote)&&(members||x.vote!=='deferred');});
 }
-export function chooseNext(db,settings=visibleSettings(db),current=db.current,random=Math.random){
- const items=eligible(db,settings).filter(x=>x.id!==current);
+// `only` limits the choice to a set of ids, e.g. images allowed on every monitor.
+export function chooseNext(db,settings=visibleSettings(db),current=db.current,random=Math.random,only=null){
+ const items=eligible(db,settings).filter(x=>x.id!==current&&(!only||only.has(x.id)));
  if(!items.length)return null;
  // Use the least shown cohort first; persisted counters survive restarts.
  const playlist=db.rotationCollection?db.collections?.find(c=>c.id===db.rotationCollection):null;
@@ -46,4 +47,11 @@ export function automationState(db,guard,{job,nextRetry,lastError,aiRequested},n
  const times=[...scheduled,db.settings.rotation?db.lastRotation+db.settings.rotationMinutes*60000:Infinity,...Object.entries(db.settings.monitors||{}).filter(([,m])=>m.rotation).map(([id,m])=>(db.monitorLastRotation?.[id]||0)+m.rotationMinutes*60000)],next=Math.min(...times);
  const held=db.wallpaperHold;
  return {refresh,analysis,rotation:{code:db.rotationPaused?'rotationPaused':held?(held.manual?'wallpaperHeldManual':'wallpaperHeld'):db.workMode?'workEnabled':!rotationEnabled?'automationOff':db.paused?'pausedByUser':guard.locked?'screenLocked':['active','idle'].includes(guard.code)?(Number.isFinite(next)?'rotationScheduled':'rotationOnEvent'):guard.code,nextAt:db.rotationPaused?null:held?(held.manual?null:held.until):Number.isFinite(next)?Math.max(next,now):null},pending,stale};
+}
+
+/** Ids of wallpapers allowed on every monitor at once (for the "same on all screens" mode). */
+export function sharedEligible(db,settingsList){
+ const sets=settingsList.map(settings=>new Set(eligible(db,settings).map(x=>x.id)));
+ if(!sets.length)return new Set();
+ return new Set([...sets[0]].filter(id=>sets.every(set=>set.has(id))));
 }

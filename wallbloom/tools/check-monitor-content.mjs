@@ -31,7 +31,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('.current-wallpaper'));
  assert.equal((await state()).wallpaperResult.code,'wallpaperChanged');
  await page.locator('[data-view="settings"]').click();await page.locator('[data-settings-tab="monitors"]').click();
- const form=page.locator('#monitorSettings form').first();assert(await form.locator('[name="inheritPurity"]').isChecked());assert(await form.locator('[name="purity"]').isDisabled());
+ const form=page.locator('#monitorSettings form').first();assert(await form.locator('[name="inheritPurity"]').isChecked());assert(await form.locator('[name="purity"] button').first().isDisabled());
  await form.locator('[name="inheritPurity"]').uncheck();await form.getByRole('button',{name:'Сохранить',exact:true}).click();
  await page.locator('[data-view="library"]').click();await page.locator('#monitorContentWarning').waitFor();
  await page.locator('[data-view="settings"]').click();await page.locator('[data-settings-tab="interests"]').click();await page.locator('#language').selectOption('en');
