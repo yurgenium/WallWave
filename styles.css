@@ -25,3 +25,16 @@
   .platform-actions .button{width:100%}
   .android-placeholder{min-height:54px}
 }
+
+/* Readability: captions and labels at least 12px, body text at least 14px.
+   The interface mock-up inside the hero illustration keeps its miniature sizes. */
+.eyebrow,.hero .eyebrow,.hero-meta,.text-link,.platform-label small,.visual-bottom p,
+.feature-number,.tag-examples span,.source-line>span,.source-line p,.local-symbol span,
+.start-note,.release-meta,.release-link,.requirements dt,.preview-note,
+.footer p,.footer-links,.footer-bottom span{font-size:12px}
+.features p,.local-copy p:not(.eyebrow),.steps p,.faq-list details p,.requirements dd,
+.intro-strip p:nth-child(2),.download-copy>p:not(.eyebrow):not(.release-meta){font-size:14px;line-height:1.55}
+.button,.download-copy .primary{font-size:14px}
+.hero .eyebrow,.section-heading .eyebrow,.local-copy .eyebrow,.download-section .eyebrow,.faq-heading .eyebrow,
+.hero-actions .text-link,.local-copy .text-link{font-size:12px}
+@media(max-width:560px){.hero .eyebrow{white-space:normal;letter-spacing:.8px}}
