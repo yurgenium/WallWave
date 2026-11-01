@@ -18,7 +18,7 @@ import {collection,editCollection,setCollectionItem,wallpaperSnapshot,rememberWa
 import {embeddingVersion,validEmbedding,tasteProfile,tasteSignature,assessTaste} from './visual-ai.mjs';
 import {fileURLToPath} from 'node:url';
 import {randomBytes,randomUUID} from 'node:crypto';
-import {defaults,validate,allowed,score,sharpModule,AppError,errorCode} from './core.mjs';
+import {defaults,validate,allowed,sharpModule,AppError,errorCode} from './core.mjs';
 import {automaticSource} from './art-providers.mjs';
 import {tasteSearchTags} from './search-profile.mjs';
 import {initialProviders,validateProvider,searchProvider,enrich,searchCursor} from './providers.mjs';
@@ -29,9 +29,9 @@ import {diagnosticsReport,diagnosticContext,diagnosticError,availabilityReason,D
 import {hasPortraitScreen,portraitImage,sourceDimensions} from './orientation.mjs';
 import {atomic,persist,readPersistent,initLibrary,usage,imagePath,downloadImage,changeVote,writeIndexes,visualFingerprint} from './library.mjs';
 import {activity,applyWallpaper,desktopInfo,openWallhavenAccount,listMonitors,applyMonitor} from './windows.mjs';
-import {visibleSettings,eligible,chooseNext,rankCandidates,pendingCapacity,staleItems,confirmShows,automationState} from './automation.mjs';
+import {visibleSettings,chooseNext,rankCandidates,pendingCapacity,staleItems,confirmShows,automationState} from './automation.mjs';
 import {exportLibrary,restoreLibrary} from './archive.mjs';
-import {validateFrame,frameSource,effectiveFrame,renderFrame,renderDesktop,renderedName,pruneRendered} from './framing.mjs';
+import {validateFrame,frameSource,renderFrame,renderDesktop,renderedName,pruneRendered} from './framing.mjs';
 const root=path.dirname(fileURLToPath(import.meta.url)),dataRoot=path.resolve(process.env.WALLWAVE_DATA_DIR||process.env.WALLBLOOM_DATA_DIR||path.join(root,'data'));
 const applicationVersion=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version;
 const profiles=await new Profiles(dataRoot).open();let dir=profiles.directory(),switchingProfile=false;

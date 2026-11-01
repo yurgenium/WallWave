@@ -17,7 +17,7 @@ const extract=file=>asar.extractFile(process.argv[2]||'dist/win-unpacked/resourc
 for(const file of sharpFiles)assert.equal(JSON.parse(extract(file)).version,'0.35.5','packaged image decoder must be patched');
 for(const file of formatterFiles)assert.ok(extract(file).toString().includes('Bound numeric precision'),'packaged formatter must include security patch');
 console.log('PASS: packaged dependencies include the decoder update and formatter security patch.');
-assert.ok(list.includes('/persistence.mjs'));
+assert.ok(list.includes('/persistence.mjs'));assert.ok(list.includes('/native-host.mjs'));
 assert.ok(!list.some(x=>/\/onnxruntime-node\/bin\/napi-v3\/(darwin|linux)\//.test(x)||x.includes('/bin/napi-v3/win32/arm64/')),'foreign native runtimes must not be packaged');
 assert.ok(!list.some(x=>/\.(wasm|map)$/.test(x)),'browser WASM and source maps must not be packaged');
 assert.ok(!list.some(x=>/\.test\.(mjs|cjs)$/.test(x)),'tests must not be packaged');

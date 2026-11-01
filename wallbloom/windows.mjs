@@ -46,7 +46,7 @@ export function powershell(script, env = {}, operation = 'unknown') {
       clearTimeout(timer);
       if (code === 0 && !timedOut) {
         nativeDiagnostic('native.finished', {nativeOperation: operation, durationMs: Math.round(performance.now() - started), exitCode: code});
-        resolve(output.replace(/^﻿/, ''));
+        resolve(output.replace(/^\uFEFF/, ''));
       } else {
         const error = nativeFailure(timedOut ? 'nativeTimeout' : 'nativeCommandFailed', operation, {exitCode: code, stderr});
         nativeDiagnostic('native.failed', {nativeOperation: operation, durationMs: Math.round(performance.now() - started), exitCode: code, error});

@@ -145,7 +145,7 @@ function mergeDiagnosticEvents(bundle,memory=[]){
 }
 
 function incidentSummary(journal){
- const entries=journal?.events||[],sessionId=journal?.writerStatus?.sessionId;
+ const entries=journal?.events||[];
  const failures=entries.filter(x=>['operation.failed','request.failed','renderer.crashed','renderer.exception','renderer.unresponsive','process.exception','transport.failed'].includes(x.event)&&!(x.event==='request.failed'&&x.attributes?.category==='staticAsset'&&x.attributes?.status<500)&&!['busy','cancelled','waitIdle'].includes(x.attributes?.code));
  const candidate=failures.at(-1)||journal?.lastErrors?.at(-1);const latestFailure=candidate?.traceId?[...failures].reverse().find(x=>x.traceId===candidate.traceId&&x.attributes?.error)||candidate:candidate,trace=latestFailure?.traceId;
  const lastObservedOutcome=entries.filter(x=>['operation.finished','operation.failed','renderer.crashed','process.exception'].includes(x.event)).at(-1);

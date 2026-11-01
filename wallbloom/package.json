@@ -11,21 +11,26 @@
     "start": "electron .",
     "start:web": "node server.mjs",
     "test": "node --test *.test.mjs *.test.cjs desktop/*.test.cjs",
-    "check": "node tools/check-syntax.mjs",
+    "check": "node tools/check-syntax.mjs && eslint .",
     "icons": "node tools/create-icons.mjs",
     "build:win": "node tools/create-diagnostic-manifest.mjs && node tools/create-icons.mjs && electron-builder --win nsis --x64",
-    "build:dir": "node tools/create-diagnostic-manifest.mjs && node tools/create-icons.mjs && electron-builder --win dir --x64"
+    "build:dir": "node tools/create-diagnostic-manifest.mjs && node tools/create-icons.mjs && electron-builder --win dir --x64",
+    "lint": "eslint ."
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "sharp": "0.35.5",
-    "@huggingface/transformers": "3.8.1"
+    "@huggingface/transformers": "3.8.1",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "electron": "44.7.0",
-    "electron-builder": "26.15.3"
+    "electron-builder": "26.15.3",
+    "eslint": "10.14.0",
+    "globals": "17.13.0",
+    "prettier": "3.6.2"
   },
   "build": {
     "appId": "app.wallbloom.desktop",
@@ -53,6 +58,7 @@
       "network.mjs",
       "providers.mjs",
       "windows.mjs",
+      "native-host.mjs",
       "ai-worker.mjs",
       "LICENSE",
       "package.json",
