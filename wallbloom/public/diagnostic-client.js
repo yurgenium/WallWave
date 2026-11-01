@@ -15,7 +15,7 @@ export function createDiagnosticClient({getState,getView}){
  const drain=()=>{const records=pending.splice(0);if(dropped){records.unshift({event:'journal.incomplete',attributes:{dropped},timestamp:Date.now()});dropped=0;}return records;};
  const flush=()=>{if(window.wallwaveDesktop?.diagnosticEvent){for(const record of drain())window.wallwaveDesktop.diagnosticEvent(record);return;}
   const state=getState();if(!state?.token)return;
-  for(const record of drain())fetch('/api/diagnostic-event',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:JSON.stringify(record)}).catch(()=>{if(pending.length<50)pending.push(record);else dropped++;});
+  for(const record of drain())fetch('/api/diagnostic-event',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':state.token},body:JSON.stringify(record)}).catch(()=>{if(pending.length<50)pending.push(record);else dropped++;});
  };
  const emit=(event,attributes,traceId)=>{pending.push({event,attributes,traceId,timestamp:Date.now()});if(pending.length>50){pending.shift();dropped++;}flush();};
  const context=(route,origin)=>{const action=route==='profiles'?'profile':route.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase());const selectedOrigin=origin||getView();const result={traceId:newTrace(),action:actions.has(action)?action:'unknown',origin:origins.has(selectedOrigin)?selectedOrigin:'unknown'};emit('ui.action',{action:result.action,origin:result.origin},result.traceId);return result;};

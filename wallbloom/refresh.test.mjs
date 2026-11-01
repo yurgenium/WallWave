@@ -25,12 +25,12 @@ async function fixture(t,config,{items=[],settings={},searchState,providers,prov
  const sharp=await sharpModule();
  for(const [id,color] of [['red','#ff3344'],['green','#33ee77'],['blue','#3344ff'],['yellow','#ffdd11']])await sharp({create:{width:800,height:600,channels:3,background:color}}).png().toFile(file+'.'+id+'.png');
  await fs.writeFile(path.join(data,'state.json'),JSON.stringify({paused:true,settings:{...defaults,ai:'off',batch:2,diversity:0,tags:['nature'],...settings},providers:providers||[{id:'wallhaven',type:'wallhaven',name:'Wallhaven',enabled:true}],items,pages:{},searchState,providerCooldowns}));
- const child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href,'--import',new URL('./tools/test-download-loader.mjs',import.meta.url).href,'--import',new URL('./tools/test-ai-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_PORT:'0',WALLBLOOM_DATA_DIR:data,WALLBLOOM_NATIVE_FIXTURE:file},silent:true,windowsHide:true});
+ const child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href,'--import',new URL('./tools/test-download-loader.mjs',import.meta.url).href,'--import',new URL('./tools/test-ai-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_PORT:'0',WALLWAVE_DATA_DIR:data,WALLWAVE_NATIVE_FIXTURE:file},silent:true,windowsHide:true});
  child.stdout.resume();let errors='';child.stderr.on('data',b=>errors+=b);
  t.after(async()=>{if(child.exitCode===null){const end=new Promise(r=>child.once('exit',r));child.send({type:'shutdown'});await end;}await fs.rm(temp,{recursive:true,force:true});});
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(errors)));});
  const base='http://127.0.0.1:'+port,get=async()=>await(await fetch(base+'/api/state')).json();let state=await get();
- return {file,data,get,base,async refresh(){const r=await fetch(base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:'{}'});assert.equal(r.status,200,await r.text());const deadline=Date.now()+50000;while(Date.now()<deadline){state=await get();if(!state.job)return state;await new Promise(r=>setTimeout(r,25));}throw Error('refresh timeout');},async searches(){return (await fs.readFile(file+'.searches','utf8')).trim().split('\n').map(Number);}};
+ return {file,data,get,base,async refresh(){const r=await fetch(base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':state.token},body:'{}'});assert.equal(r.status,200,await r.text());const deadline=Date.now()+50000;while(Date.now()<deadline){state=await get();if(!state.job)return state;await new Promise(r=>setTimeout(r,25));}throw Error('refresh timeout');},async searches(){return (await fs.readFile(file+'.searches','utf8')).trim().split('\n').map(Number);}};
 }
 
 test('one click fills batch after AI rejects a whole page; remaining page items survive next click',{timeout:25000},async t=>{
@@ -86,7 +86,7 @@ test('unreviewed pool capacity remains a hard limit',{timeout:20000},async t=>{
 test('alternating interest and discovery searches resume their own pages',{timeout:25000},async t=>{
  const f=await fixture(t,{pages:{1:[picture('old')],2:[picture('good1')],3:[picture('good2')],4:[picture('good3')]},imageAliases:{good1:'red',good2:'green',good3:'blue'}},{items:[{id:'wallhaven-old',provider:'wallhaven',rating:'safe',tags:[],vote:'ban'}],settings:{batch:1}});
  assert.equal((await f.refresh()).refreshDownloaded,1);
- for(const diversity of [100,0]){const state=await f.get();const r=await fetch(f.base+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:JSON.stringify({...state.settings,diversity})});assert(r.ok);assert.equal((await f.refresh()).refreshDownloaded,1);}
+ for(const diversity of [100,0]){const state=await f.get();const r=await fetch(f.base+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':state.token},body:JSON.stringify({...state.settings,diversity})});assert(r.ok);assert.equal((await f.refresh()).refreshDownloaded,1);}
  assert.deepEqual(await f.searches(),[1,2,1,2,3,3,4]);
 });
 
@@ -101,7 +101,7 @@ test('a missing Konachan tag does not stop other interests from filling the batc
  const s=await f.refresh();assert.equal(s.refreshDownloaded,2);assert.equal(s.refreshOutcome,'poolUpdated');assert.deepEqual(await f.searches(),[1,1]);
 });
 
-async function begin(f){const s=await f.get();const r=await fetch(f.base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token},body:'{}'});assert.equal(r.status,200);}
+async function begin(f){const s=await f.get();const r=await fetch(f.base+'/api/refresh',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':s.token},body:'{}'});assert.equal(r.status,200);}
 async function until(f,predicate){const deadline=Date.now()+15000;while(Date.now()<deadline){const s=await f.get();if(predicate(s))return s;await new Promise(resolve=>setTimeout(resolve,20));}assert.fail('State condition timed out');}
 
 test('prepared counters exclude AI rejections and reflect two overlapping original transfers',{timeout:20000},async t=>{
@@ -115,7 +115,7 @@ test('prepared counters exclude AI rejections and reflect two overlapping origin
 
 test('cancelling a batch records saved files and settles queued and active downloads',{timeout:20000},async t=>{
  const f=await fixture(t,{pages:{1:['good1','good2','good3','good4'].map(picture)},imageAliases:{good1:'red',good2:'green',good3:'yellow',good4:'blue'},downloadDelay:2000,originalDelays:{good1:100,good2:100},previewDelay:0},{settings:{batch:4}});
- await begin(f);const running=await until(f,s=>s.job?.downloaded>=2);const r=await fetch(f.base+'/api/cancel',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':running.token},body:'{}'});assert.equal(r.status,200);
+ await begin(f);const running=await until(f,s=>s.job?.downloaded>=2);const r=await fetch(f.base+'/api/cancel',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':running.token},body:'{}'});assert.equal(r.status,200);
  const s=await until(f,s=>!s.job);assert.equal(s.refreshTarget,4);assert.equal(s.refreshDownloaded,s.items.filter(x=>x.downloaded).length);assert.equal(s.refreshDownloaded,2);assert.equal(s.refreshOutcome,'poolPartial');assert.equal(s.refreshReason,'cancelled');
 });
 
@@ -154,19 +154,19 @@ test('failed originals reuse cached metadata when retried instead of querying th
 test('disabling a source prevents queued originals from starting and prevents active transfers from committing',{timeout:20000},async t=>{
  const f=await fixture(t,{pages:{1:['good1','good2','good3','good4'].map(picture)},imageAliases:{good1:'red',good2:'green',good3:'yellow',good4:'blue'},downloadDelay:500,previewDelay:0},{settings:{batch:4}});
  await begin(f);const running=await until(f,s=>s.job?.ready===4);const provider=running.providers.find(p=>p.id==='wallhaven');
- const r=await fetch(f.base+'/api/provider',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':running.token},body:JSON.stringify({...provider,enabled:false})});assert.equal(r.status,200);
+ const r=await fetch(f.base+'/api/provider',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':running.token},body:JSON.stringify({...provider,enabled:false})});assert.equal(r.status,200);
  const s=await until(f,s=>!s.job);assert.equal(s.refreshDownloaded,0);assert.equal(s.items.filter(x=>x.downloaded).length,0);
  const starts=(await fs.readFile(f.file+'.starts','utf8')).trim().split('\n').map(JSON.parse).filter(x=>x.original);assert.equal(starts.length,2);
 });
 test('queued downloads respect a stricter AI filter selected during the transfer',{timeout:20000},async t=>{
  const f=await fixture(t,{pages:{1:['borderline','good1','good2'].map(picture)},imageAliases:{borderline:'blue',good1:'red',good2:'green'},downloadDelay:500,previewDelay:0,embeddings:{'wallhaven-borderline':[.69,.72,...Array(510).fill(0)]}},{items:ratings(),settings:{batch:2,ai:'eco',aiFilter:'cautious'}});
- await begin(f);const running=await until(f,s=>s.job?.ready===2);const response=await fetch(f.base+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':running.token},body:JSON.stringify({...running.settings,aiFilter:'strict'})});assert.equal(response.status,200);
+ await begin(f);const running=await until(f,s=>s.job?.ready===2);const response=await fetch(f.base+'/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':running.token},body:JSON.stringify({...running.settings,aiFilter:'strict'})});assert.equal(response.status,200);
  const s=await until(f,s=>!s.job);assert.equal(s.refreshDownloaded,2);assert.equal(s.aiRejectedCount,1);assert(!s.items.some(x=>x.id==='wallhaven-borderline'&&x.downloaded));
 });
 test('source download cooldown survives restart and a credential change permits a fresh check',{timeout:20000},async t=>{
  const f=await fixture(t,{pages:{1:[picture('good')]},imageAliases:{good:'green'}},{settings:{batch:1},providerCooldowns:{wallhaven:{code:'sourceQuotaReached',retryAt:Date.now()+60000,time:Date.now()}}});
  let s=await f.refresh();assert.equal(s.lastError.code,'sourceQuotaReached');await assert.rejects(fs.access(f.file+'.searches'));
- const provider=s.providers.find(p=>p.id==='wallhaven'),r=await fetch(f.base+'/api/provider',{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':s.token},body:JSON.stringify({...provider,apiKey:'FIXTURE_NEW_KEY'})});assert.equal(r.status,200);
+ const provider=s.providers.find(p=>p.id==='wallhaven'),r=await fetch(f.base+'/api/provider',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':s.token},body:JSON.stringify({...provider,apiKey:'FIXTURE_NEW_KEY'})});assert.equal(r.status,200);
  s=await f.refresh();assert.equal(s.refreshDownloaded,1);assert.equal(s.refreshOutcome,'poolUpdated');
 });
 test('repeated slow transfers stop retrying an unhealthy source instead of scanning it indefinitely',{timeout:20000},async t=>{

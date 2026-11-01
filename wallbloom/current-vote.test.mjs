@@ -20,12 +20,12 @@ for(const [screens,full] of [[2,false],[0,false],[2,true]])test(`rejecting the c
  }
  if(full){const padding=await fs.open(path.join(data,'quota-fixture.bin'),'w');try{await padding.truncate(110*1024**2);}finally{await padding.close();}}
  await fs.writeFile(path.join(data,'state.json'),JSON.stringify({settings:{...defaults,rotation:false,maxTotalGB:full?0.1:defaults.maxTotalGB},paused:true,providers:[{id:'local',type:'local',name:'Local',folder:temp,enabled:true}],items,pages:{},current:'current',monitorCurrent:screens?{'screen-a':'current','screen-b':'other'}:{},lastRefresh:0,lastRotation:0}));
- const child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLBLOOM_PORT:'0',WALLBLOOM_DATA_DIR:data,WALLBLOOM_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});
+ const child=fork(new URL('./server.mjs',import.meta.url),[],{execArgv:['--import',new URL('./tools/test-native-loader.mjs',import.meta.url).href],env:{...process.env,WALLWAVE_PORT:'0',WALLWAVE_DATA_DIR:data,WALLWAVE_NATIVE_FIXTURE:fixture},silent:true,windowsHide:true});
  let stderr='';child.stderr.on('data',b=>stderr+=b);child.stdout.resume();
  t.after(async()=>{if(child.exitCode===null){const ended=new Promise(r=>child.once('exit',r));child.send({type:'shutdown'});await ended;}await fs.rm(temp,{recursive:true,force:true});});
  const port=await new Promise((resolve,reject)=>{child.on('message',m=>m.type==='ready'&&resolve(m.port));child.once('exit',()=>reject(Error(stderr)));});
  const base='http://127.0.0.1:'+port,get=async()=>await(await fetch(base+'/api/state')).json();let state=await get();
- const post=async(route,value)=>{const response=await fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallbloom-Token':state.token},body:JSON.stringify(value)});assert.equal(response.status,200,await response.text());for(let i=0;i<200;i++){state=await get();if(!state.job)return;await new Promise(r=>setTimeout(r,20));}throw Error('Job timeout');};
+ const post=async(route,value)=>{const response=await fetch(base+'/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':state.token},body:JSON.stringify(value)});assert.equal(response.status,200,await response.text());for(let i=0;i<200;i++){state=await get();if(!state.job)return;await new Promise(r=>setTimeout(r,20));}throw Error('Job timeout');};
  const calls=async()=>{try{return(await fs.readFile(fixture+'.calls','utf8')).trim().split('\n').filter(Boolean).map(JSON.parse);}catch(e){if(e.code==='ENOENT')return[];throw e;}};
  await post('vote',{id:'current',vote:'ban'});
  assert.notEqual(screens?state.monitors[0].current:state.current,'current');

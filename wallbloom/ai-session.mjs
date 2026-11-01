@@ -5,7 +5,7 @@ import {AppError} from './core.mjs';
 export class AISession{
  constructor(dir,{signal,mode='eco',modelsDir,onEvent=()=>{},allowed=()=>true}={}){
   this.closed=false;this.pending=null;this.next=0;this.ready=new Promise(resolve=>this.readyResolve=resolve);
-  this.child=fork(new URL('./ai-worker.mjs',import.meta.url),[dir,'--service'],{env:{...process.env,WALLBLOOM_AI:mode,...modelsDir&&{WALLWAVE_MODEL_CACHE:modelsDir}},silent:true,windowsHide:true});
+  this.child=fork(new URL('./ai-worker.mjs',import.meta.url),[dir,'--service'],{env:{...process.env,WALLWAVE_AI:mode,...modelsDir&&{WALLWAVE_MODEL_CACHE:modelsDir}},silent:true,windowsHide:true});
   this.child.stdout.resume();this.stderr='';this.child.stderr.on('data',b=>this.stderr=(this.stderr+b).slice(-4000));
   this.startup=setTimeout(()=>this.close('aiUnavailable'),30000);
   this.child.on('message',m=>{if(this.closed)return;if(m.ready){clearTimeout(this.startup);this.readyResolve();}if(m.code)onEvent(m.code,m.network);if(this.pending&&m.request===this.pending.id){const p=this.pending;this.pending=null;clearTimeout(p.timer);if(m.error){onEvent('aiUnavailable',{diagnosticError:{name:'Error',code:'aiUnavailable',stack:m.detail}});this.stderr=(this.stderr+'\n'+(m.detail||'')).slice(-4000);p.reject(new AppError('aiUnavailable'));}else p.resolve(m);}});
