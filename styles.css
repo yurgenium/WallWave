@@ -38,3 +38,6 @@
 .hero .eyebrow,.section-heading .eyebrow,.local-copy .eyebrow,.download-section .eyebrow,.faq-heading .eyebrow,
 .hero-actions .text-link,.local-copy .text-link{font-size:12px}
 @media(max-width:560px){.hero .eyebrow{white-space:normal;letter-spacing:.8px}}
+.header-actions{display:flex;align-items:center;gap:8px;flex:none}
+@media(max-width:560px){.header-actions .header-link[href*="github.com"]{display:none}}
+@media(max-width:720px){.header nav{display:none}}

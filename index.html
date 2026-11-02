@@ -7,6 +7,9 @@
   <meta name="theme-color" content="#101615">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://yurgenium.github.io/WallWave/">
+  <link rel="alternate" hreflang="ru" href="https://yurgenium.github.io/WallWave/">
+  <link rel="alternate" hreflang="en" href="https://yurgenium.github.io/WallWave/en/">
+  <link rel="alternate" hreflang="x-default" href="https://yurgenium.github.io/WallWave/">
   <title>WallWave — обои по твоим интересам для Windows</title>
   <meta name="description" content="Подбор обоев по заданным интересам, любимые изображения и автоматическая смена фона. WallWave для Windows: несколько мониторов, личные папки и необязательный локальный ИИ.">
   <meta property="og:type" content="website">
@@ -21,6 +24,7 @@
   <meta property="og:image:alt" content="WallWave: библиотека обоев на рабочем столе Windows">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="./assets/mark.svg" type="image/svg+xml">
+  <script>if(!/[?&]lang=ru\b/.test(location.search)&&!/^(ru|uk|be|kk)\b/i.test(navigator.language||''))location.replace('./en/'+location.hash)</script>
   <link rel="stylesheet" href="./styles.css">
   <script src="./script.js" defer></script>
 </head>
@@ -33,7 +37,7 @@
       <a href="#start">Как начать</a>
       <a href="#questions">Вопросы</a>
     </nav>
-    <a class="header-link" href="https://github.com/yurgenium/WallWave">GitHub <span aria-hidden="true">↗</span></a>
+    <div class="header-actions"><a class="header-link" href="./en/" hreflang="en" lang="en">English</a><a class="header-link" href="https://github.com/yurgenium/WallWave">GitHub <span aria-hidden="true">↗</span></a></div>
   </header>
 
   <main id="main">
@@ -120,11 +124,11 @@
     <section class="download-section wrap" id="download" aria-labelledby="download-title">
       <div class="download-copy"><p class="eyebrow">03 / Добавь немного своего</p><h2 id="download-title">Новый вид<br>на каждый день.</h2><p>WallWave для Windows.<br>Бесплатно, с открытым исходным кодом.</p>
         <div class="platform-actions">
-          <a class="button primary" href="https://github.com/yurgenium/WallWave/releases/download/v0.7.0/WallWave.exe" data-download><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg>Скачать WallWave.exe <span aria-hidden="true">↗</span></a>
+          <a class="button primary" href="https://github.com/yurgenium/WallWave/releases/latest/download/WallWave.exe" data-download><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg>Скачать WallWave.exe <span aria-hidden="true">↗</span></a>
           <button class="button android-placeholder" type="button" disabled aria-label="Версия для Android — в разработке, скачивание пока недоступно"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m7 4-2-3m12 3 2-3M4 13a8 8 0 0 1 16 0v6H4z"/><path d="M8 9h.01M16 9h.01" stroke-width="3"/></svg><span class="platform-label">Для Android<small>В разработке</small></span></button>
         </div>
-        <p class="release-meta">Windows: 0.7.0 · Тестовая версия · ≈122 МБ</p><a class="release-link" href="https://github.com/yurgenium/WallWave/releases/tag/v0.7.0">Что нового в версии <span aria-hidden="true">↗</span></a></div>
-      <div class="requirements"><h3>Перед запуском</h3><dl><div><dt>Система</dt><dd>64-разрядная Windows</dd></div><div><dt>Подключение</dt><dd>Интернет для онлайн-источников. Личные папки доступны без него.</dd></div><div id="ai-requirements"><dt>Если включить ИИ</dt><dd>От 8 ГиБ оперативной памяти, около 3 ГиБ свободно. Модель ≈90 МБ скачивается при первом включении.</dd></div><div><dt>Обновления</dt><dd>Вручную: скачай новый выпуск и запусти его. Настройки и библиотека сохраняются.</dd></div></dl><p class="preview-note">Приложение развивается. В тестовой версии возможны ошибки — о них можно <a href="https://github.com/yurgenium/WallWave/issues">сообщить на GitHub</a>.</p></div>
+        <p class="release-meta">Windows x64 · ≈122 МБ</p><a class="release-link" href="https://github.com/yurgenium/WallWave/releases/latest">Что нового <span aria-hidden="true">↗</span></a></div>
+      <div class="requirements"><h3>Перед запуском</h3><dl><div><dt>Система</dt><dd>64-разрядная Windows</dd></div><div><dt>Подключение</dt><dd>Интернет для онлайн-источников. Личные папки доступны без него.</dd></div><div id="ai-requirements"><dt>Если включить ИИ</dt><dd>От 8 ГиБ оперативной памяти, около 3 ГиБ свободно. Модель ≈90 МБ скачивается при первом включении.</dd></div><div><dt>Обновления</dt><dd>Приложение сообщит о новой версии. Скачай её и запусти: настройки и библиотека сохраняются.</dd></div></dl><p class="preview-note">Приложение развивается. Если найдёшь ошибку, о ней можно <a href="https://github.com/yurgenium/WallWave/issues">сообщить на GitHub</a>.</p></div>
     </section>
 
     <section class="faq-section wrap section" id="questions" aria-labelledby="faq-title">
