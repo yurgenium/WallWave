@@ -1,75 +1,798 @@
-const {app,BrowserWindow,Tray,Menu,nativeImage,shell,dialog,globalShortcut,powerMonitor,ipcMain,clipboard,protocol,screen}=require('electron');
-const {DiagnosticLog,traceId,hex,safeFrames,mergeDiagnosticEvents,incidentSummary}=require('./diagnostic-log.cjs');
-let diagnosticLog=null;const diagnosticSession=traceId();const displayReferences=new Map();
-function displayRef(id){if(!displayReferences.has(id))displayReferences.set(id,displayReferences.size+1);return displayReferences.get(id);}
-function logDisplays(){const displays=screen.getAllDisplays(),primary=screen.getPrimaryDisplay();for(const [index,d]of displays.entries())diagnosticLog?.record('monitor.topology',{monitorCount:displays.length,coordinateSpace:'logical',monitor:{ref:displayRef(d.id),index:index+1,width:d.bounds.width,height:d.bounds.height,left:d.bounds.x,top:d.bounds.y,scale:d.scaleFactor,rotation:d.rotation,primary:d.id===primary.id,connected:true}});}
-const {createServiceClient}=require('./local-transport.cjs');
-protocol.registerSchemesAsPrivileged([{scheme:'wallwave',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true}}]);
-const appBase='wallwave://app';
-const isAppURL=value=>{try{const u=new URL(value);return u.protocol==='wallwave:'&&u.hostname==='app'&&!u.port&&!u.username&&!u.password;}catch{return false;}};
-let localRequest=null,testHttpBase='';
-ipcMain.on('wallwave:diagnostic-event',(event,record)=>{if(!window||event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==base+'/'||!record||JSON.stringify(record).length>16384||!['ui.action','ui.request_failed','renderer.exception','ui.slow','journal.incomplete'].includes(record.event))return;const attributes={...record.attributes};if(window.getBounds&&screen?.getDisplayMatching){attributes.monitor={ref:displayRef(screen.getDisplayMatching(window.getBounds()).id)};attributes.coordinateSpace='logical';}diagnosticLog?.record(record.event,attributes,record.event==='renderer.exception'?'error':'info',{component:'renderer',traceId:hex(record.traceId,32),timestamp:record.timestamp});});
-async function serviceFetch(url,options={}){const u=new URL(url);const result=await localRequest({path:u.pathname+u.search,method:options.method||'GET',headers:{'X-Wallwave-Trace':traceId(),'X-Wallwave-Origin':options.origin||'main',...options.headers},body:options.body?Buffer.from(options.body):undefined},options.timeout||30000);return new Response(result.body,{status:result.status,headers:result.headers});}
-const {fork}=require('node:child_process');
-const fs=require('node:fs/promises');
-const path=require('node:path');
-const {labels,status}=require('./status.cjs');
-const {libraryDirectory}=require('./storage.cjs');
-let shortcutFeedback=null;
-let shortcutKey='',contextKey='',locked=false,shortcutReport={},shortcutCapture=false;
-const extra=(ru,en)=>language()==='ru'?ru:en;
-function setShortcutCapture(active){if(shortcutCapture===active)return;shortcutCapture=active;shortcutKey='';if(active)globalShortcut.unregisterAll();else if(!quitting&&snapshot)bindShortcuts();}
-function bindShortcuts(){if(shortcutCapture)return;const key=JSON.stringify(snapshot?.settings.shortcuts||{});if(key===shortcutKey)return;shortcutKey=key;globalShortcut.unregisterAll();shortcutReport={};const actions={next:()=>post('next',{},true,'shortcut'),like:()=>snapshot.current&&post('vote',{id:snapshot.current,vote:'like'},false,'shortcut'),ban:()=>snapshot.current&&post('vote',{id:snapshot.current,vote:'ban'},false,'shortcut'),work:()=>post('work',{enabled:!snapshot.workMode},false,'shortcut')};for(const [name,accelerator]of Object.entries(snapshot.settings.shortcuts||{})){if(!accelerator){shortcutReport[name]='shortcutDisabled';continue;}try{shortcutReport[name]=globalShortcut.register(accelerator,actions[name])?'shortcutActive':'shortcutConflict';}catch{shortcutReport[name]='shortcutInvalid';}}}
-async function sendContext(trigger){if(!base||!snapshot)return;const value={locked,shortcuts:shortcutReport,...trigger&&{trigger}};const key=JSON.stringify(value);if(!trigger&&key===contextKey)return;const r=await serviceFetch(base+'/api/desktop-context',{method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':snapshot.token,'X-Wallwave-Profile':snapshot.activeProfile||'main'},body:JSON.stringify(value)});if(r.ok)contextKey=key;}
-ipcMain.on('wallwave:shortcut-capture',(event,active)=>{if(typeof active!=='boolean'||!window||event.sender!==window.webContents||event.senderFrame?.url!==base+'/'||active&&!window.isFocused())return;setShortcutCapture(active);});
-ipcMain.handle('wallwave:read-clipboard',event=>{if(!window||event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==base+'/')throw Error('Clipboard unavailable');return clipboard.readText().slice(0,4097);});
-ipcMain.handle('wallwave:open-logs',event=>{if(!window||event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==base+'/')throw Error('Logs unavailable');shell.openPath(data+'.diagnostic-events');});
-ipcMain.handle('wallwave:save-diagnostics',async event=>{
- if(!window||event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==base+'/')throw Error('Diagnostics unavailable');
- const target=await dialog.showSaveDialog(window,{title:extra('Сохранить диагностику WallWave','Save WallWave diagnostics'),defaultPath:path.join(app.getPath('downloads'),'WallWave-diagnostics.json'),filters:[{name:'JSON',extensions:['json']}]});
- if(target.canceled||!target.filePath)return {canceled:true};
- logDisplays();await diagnosticLog?.flush();const response=await serviceFetch(base+'/api/diagnostics');if(!response.ok)throw Error('Diagnostics unavailable');
- const report=await response.json();if(diagnosticLog){report.journal=mergeDiagnosticEvents(report.journal,diagnosticLog.snapshot());report.journal.mainWriterStatus=diagnosticLog.status();report.reproduction=incidentSummary(report.journal);}try{await fs.writeFile(target.filePath,JSON.stringify(report));}catch(error){diagnosticLog?.record('request.failed',{action:'diagnostics',phase:'save',error},'error');throw Error('Diagnostics could not be saved');}return {canceled:false};
+const {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  nativeImage,
+  shell,
+  dialog,
+  globalShortcut,
+  powerMonitor,
+  ipcMain,
+  clipboard,
+  protocol,
+  screen,
+} = require('electron');
+const {
+  DiagnosticLog,
+  traceId,
+  hex,
+  safeFrames,
+  mergeDiagnosticEvents,
+  incidentSummary,
+} = require('./diagnostic-log.cjs');
+let diagnosticLog = null;
+const diagnosticSession = traceId();
+const displayReferences = new Map();
+function displayRef(id) {
+  if (!displayReferences.has(id)) displayReferences.set(id, displayReferences.size + 1);
+  return displayReferences.get(id);
+}
+function logDisplays() {
+  const displays = screen.getAllDisplays(),
+    primary = screen.getPrimaryDisplay();
+  for (const [index, d] of displays.entries())
+    diagnosticLog?.record('monitor.topology', {
+      monitorCount: displays.length,
+      coordinateSpace: 'logical',
+      monitor: {
+        ref: displayRef(d.id),
+        index: index + 1,
+        width: d.bounds.width,
+        height: d.bounds.height,
+        left: d.bounds.x,
+        top: d.bounds.y,
+        scale: d.scaleFactor,
+        rotation: d.rotation,
+        primary: d.id === primary.id,
+        connected: true,
+      },
+    });
+}
+const {createServiceClient} = require('./local-transport.cjs');
+protocol.registerSchemesAsPrivileged([
+  {scheme: 'wallwave', privileges: {standard: true, secure: true, supportFetchAPI: true, corsEnabled: true}},
+]);
+const appBase = 'wallwave://app';
+const isAppURL = value => {
+  try {
+    const u = new URL(value);
+    return u.protocol === 'wallwave:' && u.hostname === 'app' && !u.port && !u.username && !u.password;
+  } catch {
+    return false;
+  }
+};
+let localRequest = null,
+  testHttpBase = '';
+ipcMain.on('wallwave:diagnostic-event', (event, record) => {
+  if (
+    !window ||
+    event.sender !== window.webContents ||
+    event.senderFrame !== window.webContents.mainFrame ||
+    event.senderFrame.url !== base + '/' ||
+    !record ||
+    JSON.stringify(record).length > 16384 ||
+    !['ui.action', 'ui.request_failed', 'renderer.exception', 'ui.slow', 'journal.incomplete'].includes(record.event)
+  )
+    return;
+  const attributes = {...record.attributes};
+  if (window.getBounds && screen?.getDisplayMatching) {
+    attributes.monitor = {ref: displayRef(screen.getDisplayMatching(window.getBounds()).id)};
+    attributes.coordinateSpace = 'logical';
+  }
+  diagnosticLog?.record(record.event, attributes, record.event === 'renderer.exception' ? 'error' : 'info', {
+    component: 'renderer',
+    traceId: hex(record.traceId, 32),
+    timestamp: record.timestamp,
+  });
 });
-app.setName('WallWave');app.setAppUserModelId('app.wallbloom.desktop');
-const testMode=process.env.WALLWAVE_DESKTOP_TEST==='1';
-app.setPath('userData',testMode&&process.env.WALLWAVE_DESKTOP_TEST_HOME||path.join(app.getPath('appData'),'Wallbloom'));
-let window=null,tray=null,service=null,base='',snapshot=null,pollTimer=null,quitting=false,canQuit=false,closedNotice=false,menuKey='',failure=false,nativeMenu=null;
-const root=path.resolve(__dirname,'..'),data=libraryDirectory({home:app.getPath('home'),dataDir:process.env.WALLWAVE_DATA_DIR||process.env.WALLBLOOM_DATA_DIR,testHome:testMode&&process.env.WALLWAVE_DESKTOP_TEST_HOME});
-const language=()=>snapshot?.settings.language==='en'?'en':'ru',l=()=>labels[language()];
-const loginOptions=()=>({path:process.env.PORTABLE_EXECUTABLE_FILE||process.execPath,args:app.isPackaged?['--hidden']:[app.getAppPath(),'--hidden']});
-async function exists(file){try{await fs.access(file);return true;}catch{return false;}}
-async function migrate(){await fs.mkdir(path.dirname(data),{recursive:true});if(await exists(data))return;
- const candidates=[process.env.WALLWAVE_IMPORT_DATA_DIR||process.env.WALLBLOOM_IMPORT_DATA_DIR,path.join(testMode&&process.env.WALLWAVE_DESKTOP_TEST_HOME||app.getPath('home'),'Wallbloom','library'),path.join(app.getPath('appData'),'Wallbloom','library'),app.isPackaged?path.resolve(path.dirname(process.execPath),'../..','data'):path.join(root,'data')].filter(Boolean);let old;for(const candidate of candidates)if(path.resolve(candidate)!==data&&await exists(path.join(candidate,'state.json'))){old=candidate;break;}if(!old){await fs.mkdir(data,{recursive:true});return;}
- // Stage in a new private directory; never overwrite an existing destination library.
- const staging=await fs.mkdtemp(path.join(path.dirname(data),'library-import-'));
- for(const entry of await fs.readdir(old,{withFileTypes:true})){if(entry.isSymbolicLink())continue;if(['state.json','state.json.backup','credentials.json','credentials.json.backup','desktop-before-wallbloom.json','pending','liked','disliked','blocked','thumbnails','originals','rendered','models','work-neutral.jpg'].includes(entry.name)||/^original-wallpaper(?:-\d+)?\.[a-z0-9]+$/i.test(entry.name))await fs.cp(path.join(old,entry.name),path.join(staging,entry.name),{recursive:true,force:false,errorOnExist:true,filter:async file=>!(await fs.lstat(file)).isSymbolicLink()});}
- const file=path.join(staging,'desktop-before-wallbloom.json');if(await exists(file)){const backup=JSON.parse(await fs.readFile(file,'utf8'));if(backup.wallpaper&&path.dirname(backup.wallpaper)===path.resolve(old)){backup.wallpaper=path.join(data,path.basename(backup.wallpaper));}for(const m of backup.monitors||[])if(m.wallpaper&&path.dirname(m.wallpaper)===path.resolve(old))m.wallpaper=path.join(data,path.basename(m.wallpaper));await fs.writeFile(file,JSON.stringify(backup,null,2));}
- if(path.dirname(staging)!==path.dirname(data)||!path.basename(staging).startsWith('library-import-')||await exists(data))throw Error('Library migration destination changed');await fs.rename(staging,data);
+async function serviceFetch(url, options = {}) {
+  const u = new URL(url);
+  const result = await localRequest(
+    {
+      path: u.pathname + u.search,
+      method: options.method || 'GET',
+      headers: {'X-Wallwave-Trace': traceId(), 'X-Wallwave-Origin': options.origin || 'main', ...options.headers},
+      body: options.body ? Buffer.from(options.body) : undefined,
+    },
+    options.timeout || 30000,
+  );
+  return new Response(result.body, {status: result.status, headers: result.headers});
 }
-async function openExternal(url){try{const u=new URL(url);if(u.protocol==='https:'&&!u.username&&!u.password)await shell.openExternal(u.href);}catch{}}
-function openWindow(panel){if(panel==='hold'){const show=()=>window?.webContents.send('wallwave:open-panel','hold');if(window&&!window.isDestroyed()&&!window.webContents.isLoading())show();else{const wait=setInterval(()=>{if(window&&!window.isDestroyed()&&!window.webContents.isLoading()){clearInterval(wait);show();}},100);setTimeout(()=>clearInterval(wait),30000).unref();}}if(quitting||!base)return;if(window&&!window.isDestroyed()){if(window.isMinimized())window.restore();window.show();window.focus();return;}
- window=new BrowserWindow({width:1280,height:860,minWidth:720,minHeight:560,show:false,title:'WallWave',backgroundColor:'#101318',icon:path.join(__dirname,'icons/app.ico'),autoHideMenuBar:true,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
- window.webContents.setWindowOpenHandler(({url})=>{openExternal(url);return {action:'deny'};});window.webContents.on('will-navigate',(event,url)=>{if(!isAppURL(url)){event.preventDefault();openExternal(url);}});window.webContents.on('will-attach-webview',event=>event.preventDefault());window.webContents.session.setPermissionRequestHandler((webContents,permission,callback)=>callback(false));
- window.on('blur',()=>setShortcutCapture(false));window.webContents.on('render-process-gone',(_,details)=>{setShortcutCapture(false);diagnosticLog?.record('renderer.crashed',{crashReason:details.reason,exitCode:details.exitCode},'error',{component:'renderer'});});window.webContents.on('unresponsive',()=>diagnosticLog?.record('renderer.unresponsive',{},'warn',{component:'renderer'}));window.webContents.on('responsive',()=>diagnosticLog?.record('renderer.responsive',{},'info',{component:'renderer'}));window.webContents.on('console-message',(event,level,message,line,source)=>{if((event.level??level)==='error'||(event.level??level)===3)diagnosticLog?.record('renderer.exception',{frames:safeFrames(String(event.sourceId||source||'')+':'+Number(event.lineNumber||line||0)+':0')},'error',{component:'renderer'});});window.webContents.on('preload-error',(_,file,error)=>diagnosticLog?.record('renderer.preload_failed',{error},'error',{component:'renderer'}));window.webContents.on('did-fail-load',(_,code)=>diagnosticLog?.record('renderer.load_failed',{status:code},'error',{component:'renderer'}));
- window.once('ready-to-show',()=>{window?.show();});window.on('closed',()=>{diagnosticLog?.record('ui.action',{action:'windowClose',origin:'main'});setShortcutCapture(false);window=null;if(!quitting&&!closedNotice){closedNotice=true;tray.displayBalloon({title:l().closeTitle,content:l().closeText,iconType:'info'});}});
- window.on('session-end',()=>{service?.send({type:'shutdown'});});window.loadURL(base).catch(()=>{failure=true;updateTray();});
+const {fork} = require('node:child_process');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const {labels, status} = require('./status.cjs');
+const {libraryDirectory} = require('./storage.cjs');
+let shortcutFeedback = null;
+let shortcutKey = '',
+  contextKey = '',
+  locked = false,
+  shortcutReport = {},
+  shortcutCapture = false;
+const extra = (ru, en) => (language() === 'ru' ? ru : en);
+function setShortcutCapture(active) {
+  if (shortcutCapture === active) return;
+  shortcutCapture = active;
+  shortcutKey = '';
+  if (active) globalShortcut.unregisterAll();
+  else if (!quitting && snapshot) bindShortcuts();
 }
-function updateTray(){if(!tray)return;const phase=failure?'error':status(snapshot),texts=l(),image=phase==='ready'?'working':['working','paused','error'].includes(phase)?phase:'waiting';tray.setImage(nativeImage.createFromPath(path.join(__dirname,'icons',image+'.png')));tray.setToolTip('WallWave — '+(quitting?texts.closing:texts[phase]));window?.setTitle('WallWave — '+texts[phase]);
- const auto=app.getLoginItemSettings(loginOptions()).openAtLogin;const key=JSON.stringify([phase,language(),snapshot?.paused,!!base,auto,snapshot?.workMode,snapshot?.current,snapshot?.job?.kind,snapshot?.canPrevious,snapshot?.wallpaperHold,snapshot?.activeProfile,failure]);if(key===menuKey)return;menuKey=key;
- const controlsLocked=['import','export'].includes(snapshot?.job?.kind);nativeMenu=Menu.buildFromTemplate([{label:'WallWave — '+texts[phase],enabled:false},{type:'separator'},{id:'open',label:texts.open,enabled:!!base,click:openWindow},{id:'pause',label:snapshot?.paused?texts.resume:texts.pause,enabled:!!snapshot&&!failure,click:()=>post('pause',{paused:!snapshot.paused})},{id:'refresh',label:texts.refresh,enabled:!!snapshot&&!snapshot.job&&!failure,click:()=>post('refresh',{})},{type:'separator'},{id:'previous',label:extra('Вернуть предыдущие обои','Restore previous wallpaper'),enabled:!!snapshot?.canPrevious&&!controlsLocked&&!failure,click:()=>post('previous',{},true)},{id:'hold',label:extra('Оставить текущие обои…','Keep current wallpaper…'),enabled:!!base&&!failure&&!['import','export','cleanup'].includes(snapshot?.job?.kind),click:()=>openWindow('hold')},{id:'next',label:extra('Следующие обои','Next wallpaper'),enabled:!!snapshot&&!controlsLocked&&!snapshot.workMode&&!failure,click:()=>post('next',{})},{id:'like',label:extra('Нравится','Like'),enabled:!!snapshot?.current&&!controlsLocked&&!failure,click:()=>post('vote',{id:snapshot.current,vote:'like'})},{id:'ban',label:extra('Исключить','Exclude'),enabled:!!snapshot?.current&&!controlsLocked&&!failure,click:()=>post('vote',{id:snapshot.current,vote:'ban'})},{id:'work',label:extra(snapshot?.workMode?'Выключить режим без 18+':'Режим без 18+',snapshot?.workMode?'Turn off no 18+ mode':'No 18+ mode'),enabled:!!snapshot&&!controlsLocked&&!failure,click:()=>post('work',{enabled:!snapshot.workMode})},{type:'separator'},{id:'startup',label:texts.startup,type:'checkbox',checked:auto,click:item=>{if(testMode)return;const executable=process.env.PORTABLE_EXECUTABLE_FILE||process.execPath;const args=app.isPackaged?['--hidden']:[app.getAppPath(),'--hidden'];app.setLoginItemSettings({openAtLogin:item.checked,path:executable,args});menuKey='';updateTray();}},{type:'separator'},{id:'quit',label:texts.quit,click:beginQuit}]);tray.setContextMenu(nativeMenu);
+function bindShortcuts() {
+  if (shortcutCapture) return;
+  const key = JSON.stringify(snapshot?.settings.shortcuts || {});
+  if (key === shortcutKey) return;
+  shortcutKey = key;
+  globalShortcut.unregisterAll();
+  shortcutReport = {};
+  const actions = {
+    next: () => post('next', {}, true, 'shortcut'),
+    like: () => snapshot.current && post('vote', {id: snapshot.current, vote: 'like'}, false, 'shortcut'),
+    ban: () => snapshot.current && post('vote', {id: snapshot.current, vote: 'ban'}, false, 'shortcut'),
+    work: () => post('work', {enabled: !snapshot.workMode}, false, 'shortcut'),
+  };
+  for (const [name, accelerator] of Object.entries(snapshot.settings.shortcuts || {})) {
+    if (!accelerator) {
+      shortcutReport[name] = 'shortcutDisabled';
+      continue;
+    }
+    try {
+      shortcutReport[name] = globalShortcut.register(accelerator, actions[name])
+        ? 'shortcutActive'
+        : 'shortcutConflict';
+    } catch {
+      shortcutReport[name] = 'shortcutInvalid';
+    }
+  }
 }
-async function poll(){if(!base||quitting)return;try{const response=await serviceFetch(base+'/api/desktop-state',{timeout:3000});if(!response.ok)throw Error();snapshot=await response.json();if(shortcutFeedback&&!snapshot.wallpaperAction&&snapshot.wallpaperResult?.time>=shortcutFeedback){const code=snapshot.wallpaperResult.code;tray?.displayBalloon({title:'WallWave',content:code==='wallpaperChanged'?extra('Обои изменены','Wallpaper changed'):extra('Обои не изменены. Подробности — в журнале приложения.','Wallpaper was not changed. Please check the app log.'),iconType:code==='wallpaperChanged'?'info':'warning'});shortcutFeedback=null;}failure=false;bindShortcuts();await sendContext();updateTray();}catch{failure=true;updateTray();}}
-async function post(route,value,feedback=false,origin='tray'){
- if(feedback){shortcutFeedback=Date.now();tray?.displayBalloon({title:'WallWave',content:extra('Обои меняются…','Changing wallpaper…'),iconType:'info'});}
- try{const response=await serviceFetch(base+'/api/'+route,{origin,method:'POST',headers:{'Content-Type':'application/json','X-Wallwave-Token':snapshot.token,'X-Wallwave-Profile':snapshot.activeProfile||'main'},body:JSON.stringify(value),timeout:10000});if(!response.ok)throw Error();await poll();}
- catch{shortcutFeedback=null;failure=true;updateTray();}
+async function sendContext(trigger) {
+  if (!base || !snapshot) return;
+  const value = {locked, shortcuts: shortcutReport, ...(trigger && {trigger})};
+  const key = JSON.stringify(value);
+  if (!trigger && key === contextKey) return;
+  const r = await serviceFetch(base + '/api/desktop-context', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Wallwave-Token': snapshot.token,
+      'X-Wallwave-Profile': snapshot.activeProfile || 'main',
+    },
+    body: JSON.stringify(value),
+  });
+  if (r.ok) contextKey = key;
 }
-async function beginQuit(){if(quitting)return;quitting=true;globalShortcut.unregisterAll();clearInterval(pollTimer);window?.destroy();updateTray();if(service&&service.exitCode===null){const child=service;await new Promise(resolve=>{const timeout=setTimeout(()=>{child.kill();resolve();},8000);child.once('exit',()=>{clearTimeout(timeout);resolve();});try{child.send({type:'shutdown'});}catch{clearTimeout(timeout);child.kill();resolve();}});}await diagnosticLog?.close();tray?.destroy();canQuit=true;app.quit();}
-async function start(){diagnosticLog=await new DiagnosticLog(data+'.diagnostic-events','main',{sessionId:diagnosticSession,version:app.getVersion()}).open();diagnosticLog.installProcessMonitoring();logDisplays();screen.on('display-added',logDisplays);screen.on('display-removed',(_,display)=>{diagnosticLog?.record('monitor.removed',{monitor:{ref:displayRef(display.id),connected:false},monitorCount:screen.getAllDisplays().length});logDisplays();});screen.on('display-metrics-changed',logDisplays);app.on('child-process-gone',(_,details)=>diagnosticLog?.record('process.exception',{crashReason:details.reason,exitCode:details.exitCode},'error'));protocol.handle('wallwave',async request=>{if(!isAppURL(request.url)||request.initiatorOrigin&&request.initiatorOrigin!==appBase||!['GET','POST'].includes(request.method))return new Response('Forbidden',{status:403});try{const u=new URL(request.url),headers=Object.fromEntries(request.headers);delete headers['accept-encoding'];const body=request.method==='POST'?Buffer.from(await request.arrayBuffer()):undefined;const result=await localRequest({path:u.pathname+u.search,method:request.method,headers,body});return new Response(result.body,{status:result.status,headers:result.headers});}catch(error){diagnosticLog?.record('transport.failed',{error,phase:'request'},'error');return new Response('Local service unavailable',{status:503});}});locked=powerMonitor.getSystemIdleState(1)==='locked';powerMonitor.on('lock-screen',()=>{locked=true;sendContext().catch(()=>{});});powerMonitor.on('unlock-screen',()=>{locked=false;sendContext().catch(()=>{});});powerMonitor.on('resume',()=>sendContext('wake').catch(()=>{}));Menu.setApplicationMenu(null);await migrate();tray=new Tray(nativeImage.createFromPath(path.join(__dirname,'icons/waiting.png')));tray.on('click',openWindow);tray.on('double-click',openWindow);updateTray();const logs=await fs.open(path.join(data,'desktop.log'),'a');
- service=fork(path.join(root,'server.mjs'),[],{execPath:process.execPath,env:{...process.env,ELECTRON_RUN_AS_NODE:'1',WALLWAVE_DATA_DIR:data,WALLWAVE_PORT:'0',WALLWAVE_DESKTOP_IPC:'1',WALLWAVE_DIAGNOSTIC_SESSION:diagnosticSession,WALLWAVE_TEST_HTTP:testMode&&process.env.WALLWAVE_DESKTOP_NO_HTTP!=='1'?'1':'0'},silent:true,windowsHide:true,serialization:'advanced'});localRequest=createServiceClient(service,{onEvent:(event,attributes,correlation)=>diagnosticLog?.record(event,attributes,event==='transport.failed'?'error':'warn',{...correlation,component:'transport'})});service.stdout.on('data',bytes=>logs.write(bytes).catch(()=>{}));service.stderr.on('data',bytes=>logs.write(bytes).catch(()=>{}));service.on('exit',(code,signal)=>{diagnosticLog?.record('service.exited',{exitCode:code,clean:quitting},quitting?'info':'error');logs.close().catch(()=>{});if(!quitting&&base){failure=true;updateTray();dialog.showMessageBox({type:'error',title:l().startupError,message:l().serviceError,detail:extra('Журнал: ','Log: ')+path.join(data,'desktop.log')+'\nhttps://github.com/yurgenium/WallWave/issues',buttons:[extra('Закрыть','Close'),extra('Открыть журнал','Open log')] }).then(({response})=>{if(response===1)shell.showItemInFolder(path.join(data,'desktop.log'));});}});
- await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Background service startup timeout')),20000);service.once('error',reject);service.once('exit',()=>reject(Error('Background service exited')));service.on('message',message=>{if(message.type==='ready'){clearTimeout(timeout);base=appBase;if(message.port)testHttpBase='http://127.0.0.1:'+message.port;resolve();}});});await poll();pollTimer=setInterval(poll,3000);if(!process.argv.includes('--hidden'))openWindow();
- if(testMode)await fs.writeFile(path.join(data,'desktop-test-ready.json'),JSON.stringify({base:testHttpBase||base,uiBase:base,pid:process.pid,servicePid:service.pid}));
+ipcMain.on('wallwave:shortcut-capture', (event, active) => {
+  if (
+    typeof active !== 'boolean' ||
+    !window ||
+    event.sender !== window.webContents ||
+    event.senderFrame?.url !== base + '/' ||
+    (active && !window.isFocused())
+  )
+    return;
+  setShortcutCapture(active);
+});
+ipcMain.handle('wallwave:read-clipboard', event => {
+  if (
+    !window ||
+    event.sender !== window.webContents ||
+    event.senderFrame !== window.webContents.mainFrame ||
+    event.senderFrame.url !== base + '/'
+  )
+    throw Error('Clipboard unavailable');
+  return clipboard.readText().slice(0, 4097);
+});
+ipcMain.handle('wallwave:open-logs', event => {
+  if (
+    !window ||
+    event.sender !== window.webContents ||
+    event.senderFrame !== window.webContents.mainFrame ||
+    event.senderFrame.url !== base + '/'
+  )
+    throw Error('Logs unavailable');
+  shell.openPath(data + '.diagnostic-events');
+});
+ipcMain.handle('wallwave:save-diagnostics', async event => {
+  if (
+    !window ||
+    event.sender !== window.webContents ||
+    event.senderFrame !== window.webContents.mainFrame ||
+    event.senderFrame.url !== base + '/'
+  )
+    throw Error('Diagnostics unavailable');
+  const target = await dialog.showSaveDialog(window, {
+    title: extra('Сохранить диагностику WallWave', 'Save WallWave diagnostics'),
+    defaultPath: path.join(app.getPath('downloads'), 'WallWave-diagnostics.json'),
+    filters: [{name: 'JSON', extensions: ['json']}],
+  });
+  if (target.canceled || !target.filePath) return {canceled: true};
+  logDisplays();
+  await diagnosticLog?.flush();
+  const response = await serviceFetch(base + '/api/diagnostics');
+  if (!response.ok) throw Error('Diagnostics unavailable');
+  const report = await response.json();
+  if (diagnosticLog) {
+    report.journal = mergeDiagnosticEvents(report.journal, diagnosticLog.snapshot());
+    report.journal.mainWriterStatus = diagnosticLog.status();
+    report.reproduction = incidentSummary(report.journal);
+  }
+  try {
+    await fs.writeFile(target.filePath, JSON.stringify(report));
+  } catch (error) {
+    diagnosticLog?.record('request.failed', {action: 'diagnostics', phase: 'save', error}, 'error');
+    throw Error('Diagnostics could not be saved');
+  }
+  return {canceled: false};
+});
+app.setName('WallWave');
+app.setAppUserModelId('app.wallbloom.desktop');
+const testMode = process.env.WALLWAVE_DESKTOP_TEST === '1';
+app.setPath(
+  'userData',
+  (testMode && process.env.WALLWAVE_DESKTOP_TEST_HOME) || path.join(app.getPath('appData'), 'Wallbloom'),
+);
+let window = null,
+  tray = null,
+  service = null,
+  base = '',
+  snapshot = null,
+  pollTimer = null,
+  quitting = false,
+  canQuit = false,
+  closedNotice = false,
+  menuKey = '',
+  failure = false,
+  nativeMenu = null;
+const root = path.resolve(__dirname, '..'),
+  data = libraryDirectory({
+    home: app.getPath('home'),
+    dataDir: process.env.WALLWAVE_DATA_DIR || process.env.WALLBLOOM_DATA_DIR,
+    testHome: testMode && process.env.WALLWAVE_DESKTOP_TEST_HOME,
+  });
+const language = () => (snapshot?.settings.language === 'en' ? 'en' : 'ru'),
+  l = () => labels[language()];
+const loginOptions = () => ({
+  path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath,
+  args: app.isPackaged ? ['--hidden'] : [app.getAppPath(), '--hidden'],
+});
+async function exists(file) {
+  try {
+    await fs.access(file);
+    return true;
+  } catch {
+    return false;
+  }
 }
-if(!app.requestSingleInstanceLock()){app.quit();}else{app.on('second-instance',openWindow);app.on('activate',openWindow);app.on('window-all-closed',()=>{});app.on('before-quit',event=>{if(!canQuit){event.preventDefault();beginQuit();}});app.whenReady().then(start).catch(async error=>{diagnosticLog?.record('process.exception',{error,phase:'startup'},'error');await diagnosticLog?.flush();await fs.mkdir(data,{recursive:true}).catch(()=>{});await fs.appendFile(path.join(data,'desktop.log'),String(error.stack)+'\n').catch(()=>{});dialog.showErrorBox(l().startupError,error.message+'\n\n'+extra('Журнал запуска: ','Startup log: ')+path.join(data,'desktop.log')+'\nhttps://github.com/yurgenium/WallWave/issues');beginQuit();});}
-if(testMode)globalThis.__wallwaveTest={openWindow,post,beginQuit,getSnapshot:()=>snapshot,getMenu:()=>nativeMenu,getServicePid:()=>service?.pid};
+async function migrate() {
+  await fs.mkdir(path.dirname(data), {recursive: true});
+  if (await exists(data)) return;
+  const candidates = [
+    process.env.WALLWAVE_IMPORT_DATA_DIR || process.env.WALLBLOOM_IMPORT_DATA_DIR,
+    path.join((testMode && process.env.WALLWAVE_DESKTOP_TEST_HOME) || app.getPath('home'), 'Wallbloom', 'library'),
+    path.join(app.getPath('appData'), 'Wallbloom', 'library'),
+    app.isPackaged ? path.resolve(path.dirname(process.execPath), '../..', 'data') : path.join(root, 'data'),
+  ].filter(Boolean);
+  let old;
+  for (const candidate of candidates)
+    if (path.resolve(candidate) !== data && (await exists(path.join(candidate, 'state.json')))) {
+      old = candidate;
+      break;
+    }
+  if (!old) {
+    await fs.mkdir(data, {recursive: true});
+    return;
+  }
+  // Stage in a new private directory; never overwrite an existing destination library.
+  const staging = await fs.mkdtemp(path.join(path.dirname(data), 'library-import-'));
+  for (const entry of await fs.readdir(old, {withFileTypes: true})) {
+    if (entry.isSymbolicLink()) continue;
+    if (
+      [
+        'state.json',
+        'state.json.backup',
+        'credentials.json',
+        'credentials.json.backup',
+        'desktop-before-wallbloom.json',
+        'pending',
+        'liked',
+        'disliked',
+        'blocked',
+        'thumbnails',
+        'originals',
+        'rendered',
+        'models',
+        'work-neutral.jpg',
+      ].includes(entry.name) ||
+      /^original-wallpaper(?:-\d+)?\.[a-z0-9]+$/i.test(entry.name)
+    )
+      await fs.cp(path.join(old, entry.name), path.join(staging, entry.name), {
+        recursive: true,
+        force: false,
+        errorOnExist: true,
+        filter: async file => !(await fs.lstat(file)).isSymbolicLink(),
+      });
+  }
+  const file = path.join(staging, 'desktop-before-wallbloom.json');
+  if (await exists(file)) {
+    const backup = JSON.parse(await fs.readFile(file, 'utf8'));
+    if (backup.wallpaper && path.dirname(backup.wallpaper) === path.resolve(old)) {
+      backup.wallpaper = path.join(data, path.basename(backup.wallpaper));
+    }
+    for (const m of backup.monitors || [])
+      if (m.wallpaper && path.dirname(m.wallpaper) === path.resolve(old))
+        m.wallpaper = path.join(data, path.basename(m.wallpaper));
+    await fs.writeFile(file, JSON.stringify(backup, null, 2));
+  }
+  if (
+    path.dirname(staging) !== path.dirname(data) ||
+    !path.basename(staging).startsWith('library-import-') ||
+    (await exists(data))
+  )
+    throw Error('Library migration destination changed');
+  await fs.rename(staging, data);
+}
+async function openExternal(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol === 'https:' && !u.username && !u.password) await shell.openExternal(u.href);
+  } catch {}
+}
+function openWindow(panel) {
+  if (panel === 'hold') {
+    const show = () => window?.webContents.send('wallwave:open-panel', 'hold');
+    if (window && !window.isDestroyed() && !window.webContents.isLoading()) show();
+    else {
+      const wait = setInterval(() => {
+        if (window && !window.isDestroyed() && !window.webContents.isLoading()) {
+          clearInterval(wait);
+          show();
+        }
+      }, 100);
+      setTimeout(() => clearInterval(wait), 30000).unref();
+    }
+  }
+  if (quitting || !base) return;
+  if (window && !window.isDestroyed()) {
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+    return;
+  }
+  window = new BrowserWindow({
+    width: 1280,
+    height: 860,
+    minWidth: 720,
+    minHeight: 560,
+    show: false,
+    title: 'WallWave',
+    backgroundColor: '#101318',
+    icon: path.join(__dirname, 'icons/app.ico'),
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+    },
+  });
+  window.webContents.setWindowOpenHandler(({url}) => {
+    openExternal(url);
+    return {action: 'deny'};
+  });
+  window.webContents.on('will-navigate', (event, url) => {
+    if (!isAppURL(url)) {
+      event.preventDefault();
+      openExternal(url);
+    }
+  });
+  window.webContents.on('will-attach-webview', event => event.preventDefault());
+  window.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => callback(false));
+  window.on('blur', () => setShortcutCapture(false));
+  window.webContents.on('render-process-gone', (_, details) => {
+    setShortcutCapture(false);
+    diagnosticLog?.record('renderer.crashed', {crashReason: details.reason, exitCode: details.exitCode}, 'error', {
+      component: 'renderer',
+    });
+  });
+  window.webContents.on('unresponsive', () =>
+    diagnosticLog?.record('renderer.unresponsive', {}, 'warn', {component: 'renderer'}),
+  );
+  window.webContents.on('responsive', () =>
+    diagnosticLog?.record('renderer.responsive', {}, 'info', {component: 'renderer'}),
+  );
+  window.webContents.on('console-message', (event, level, message, line, source) => {
+    if ((event.level ?? level) === 'error' || (event.level ?? level) === 3)
+      diagnosticLog?.record(
+        'renderer.exception',
+        {
+          frames: safeFrames(
+            String(event.sourceId || source || '') + ':' + Number(event.lineNumber || line || 0) + ':0',
+          ),
+        },
+        'error',
+        {component: 'renderer'},
+      );
+  });
+  window.webContents.on('preload-error', (_, file, error) =>
+    diagnosticLog?.record('renderer.preload_failed', {error}, 'error', {component: 'renderer'}),
+  );
+  window.webContents.on('did-fail-load', (_, code) =>
+    diagnosticLog?.record('renderer.load_failed', {status: code}, 'error', {component: 'renderer'}),
+  );
+  window.once('ready-to-show', () => {
+    window?.show();
+  });
+  window.on('closed', () => {
+    diagnosticLog?.record('ui.action', {action: 'windowClose', origin: 'main'});
+    setShortcutCapture(false);
+    window = null;
+    if (!quitting && !closedNotice) {
+      closedNotice = true;
+      tray.displayBalloon({title: l().closeTitle, content: l().closeText, iconType: 'info'});
+    }
+  });
+  window.on('session-end', () => {
+    service?.send({type: 'shutdown'});
+  });
+  window.loadURL(base).catch(() => {
+    failure = true;
+    updateTray();
+  });
+}
+function updateTray() {
+  if (!tray) return;
+  const phase = failure ? 'error' : status(snapshot),
+    texts = l(),
+    image = phase === 'ready' ? 'working' : ['working', 'paused', 'error'].includes(phase) ? phase : 'waiting';
+  tray.setImage(nativeImage.createFromPath(path.join(__dirname, 'icons', image + '.png')));
+  tray.setToolTip('WallWave — ' + (quitting ? texts.closing : texts[phase]));
+  window?.setTitle('WallWave — ' + texts[phase]);
+  const auto = app.getLoginItemSettings(loginOptions()).openAtLogin;
+  const key = JSON.stringify([
+    phase,
+    language(),
+    snapshot?.paused,
+    !!base,
+    auto,
+    snapshot?.workMode,
+    snapshot?.current,
+    snapshot?.job?.kind,
+    snapshot?.canPrevious,
+    snapshot?.wallpaperHold,
+    snapshot?.activeProfile,
+    failure,
+  ]);
+  if (key === menuKey) return;
+  menuKey = key;
+  const controlsLocked = ['import', 'export'].includes(snapshot?.job?.kind);
+  nativeMenu = Menu.buildFromTemplate([
+    {label: 'WallWave — ' + texts[phase], enabled: false},
+    {type: 'separator'},
+    {id: 'open', label: texts.open, enabled: !!base, click: openWindow},
+    {
+      id: 'pause',
+      label: snapshot?.paused ? texts.resume : texts.pause,
+      enabled: !!snapshot && !failure,
+      click: () => post('pause', {paused: !snapshot.paused}),
+    },
+    {
+      id: 'refresh',
+      label: texts.refresh,
+      enabled: !!snapshot && !snapshot.job && !failure,
+      click: () => post('refresh', {}),
+    },
+    {type: 'separator'},
+    {
+      id: 'previous',
+      label: extra('Вернуть предыдущие обои', 'Restore previous wallpaper'),
+      enabled: !!snapshot?.canPrevious && !controlsLocked && !failure,
+      click: () => post('previous', {}, true),
+    },
+    {
+      id: 'hold',
+      label: extra('Оставить текущие обои…', 'Keep current wallpaper…'),
+      enabled: !!base && !failure && !['import', 'export', 'cleanup'].includes(snapshot?.job?.kind),
+      click: () => openWindow('hold'),
+    },
+    {
+      id: 'next',
+      label: extra('Следующие обои', 'Next wallpaper'),
+      enabled: !!snapshot && !controlsLocked && !snapshot.workMode && !failure,
+      click: () => post('next', {}),
+    },
+    {
+      id: 'like',
+      label: extra('Нравится', 'Like'),
+      enabled: !!snapshot?.current && !controlsLocked && !failure,
+      click: () => post('vote', {id: snapshot.current, vote: 'like'}),
+    },
+    {
+      id: 'ban',
+      label: extra('Исключить', 'Exclude'),
+      enabled: !!snapshot?.current && !controlsLocked && !failure,
+      click: () => post('vote', {id: snapshot.current, vote: 'ban'}),
+    },
+    {
+      id: 'work',
+      label: extra(
+        snapshot?.workMode ? 'Выключить режим без 18+' : 'Режим без 18+',
+        snapshot?.workMode ? 'Turn off no 18+ mode' : 'No 18+ mode',
+      ),
+      enabled: !!snapshot && !controlsLocked && !failure,
+      click: () => post('work', {enabled: !snapshot.workMode}),
+    },
+    {type: 'separator'},
+    {
+      id: 'startup',
+      label: texts.startup,
+      type: 'checkbox',
+      checked: auto,
+      click: item => {
+        if (testMode) return;
+        const executable = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+        const args = app.isPackaged ? ['--hidden'] : [app.getAppPath(), '--hidden'];
+        app.setLoginItemSettings({openAtLogin: item.checked, path: executable, args});
+        menuKey = '';
+        updateTray();
+      },
+    },
+    {type: 'separator'},
+    {id: 'quit', label: texts.quit, click: beginQuit},
+  ]);
+  tray.setContextMenu(nativeMenu);
+}
+async function poll() {
+  if (!base || quitting) return;
+  try {
+    const response = await serviceFetch(base + '/api/desktop-state', {timeout: 3000});
+    if (!response.ok) throw Error();
+    snapshot = await response.json();
+    if (shortcutFeedback && !snapshot.wallpaperAction && snapshot.wallpaperResult?.time >= shortcutFeedback) {
+      const code = snapshot.wallpaperResult.code;
+      tray?.displayBalloon({
+        title: 'WallWave',
+        content:
+          code === 'wallpaperChanged'
+            ? extra('Обои изменены', 'Wallpaper changed')
+            : extra(
+                'Обои не изменены. Подробности — в журнале приложения.',
+                'Wallpaper was not changed. Please check the app log.',
+              ),
+        iconType: code === 'wallpaperChanged' ? 'info' : 'warning',
+      });
+      shortcutFeedback = null;
+    }
+    failure = false;
+    bindShortcuts();
+    await sendContext();
+    updateTray();
+  } catch {
+    failure = true;
+    updateTray();
+  }
+}
+async function post(route, value, feedback = false, origin = 'tray') {
+  if (feedback) {
+    shortcutFeedback = Date.now();
+    tray?.displayBalloon({
+      title: 'WallWave',
+      content: extra('Обои меняются…', 'Changing wallpaper…'),
+      iconType: 'info',
+    });
+  }
+  try {
+    const response = await serviceFetch(base + '/api/' + route, {
+      origin,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Wallwave-Token': snapshot.token,
+        'X-Wallwave-Profile': snapshot.activeProfile || 'main',
+      },
+      body: JSON.stringify(value),
+      timeout: 10000,
+    });
+    if (!response.ok) throw Error();
+    await poll();
+  } catch {
+    shortcutFeedback = null;
+    failure = true;
+    updateTray();
+  }
+}
+async function beginQuit() {
+  if (quitting) return;
+  quitting = true;
+  globalShortcut.unregisterAll();
+  clearInterval(pollTimer);
+  window?.destroy();
+  updateTray();
+  if (service && service.exitCode === null) {
+    const child = service;
+    await new Promise(resolve => {
+      const timeout = setTimeout(() => {
+        child.kill();
+        resolve();
+      }, 8000);
+      child.once('exit', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      try {
+        child.send({type: 'shutdown'});
+      } catch {
+        clearTimeout(timeout);
+        child.kill();
+        resolve();
+      }
+    });
+  }
+  await diagnosticLog?.close();
+  tray?.destroy();
+  canQuit = true;
+  app.quit();
+}
+async function start() {
+  diagnosticLog = await new DiagnosticLog(data + '.diagnostic-events', 'main', {
+    sessionId: diagnosticSession,
+    version: app.getVersion(),
+  }).open();
+  diagnosticLog.installProcessMonitoring();
+  logDisplays();
+  screen.on('display-added', logDisplays);
+  screen.on('display-removed', (_, display) => {
+    diagnosticLog?.record('monitor.removed', {
+      monitor: {ref: displayRef(display.id), connected: false},
+      monitorCount: screen.getAllDisplays().length,
+    });
+    logDisplays();
+  });
+  screen.on('display-metrics-changed', logDisplays);
+  app.on('child-process-gone', (_, details) =>
+    diagnosticLog?.record('process.exception', {crashReason: details.reason, exitCode: details.exitCode}, 'error'),
+  );
+  protocol.handle('wallwave', async request => {
+    if (
+      !isAppURL(request.url) ||
+      (request.initiatorOrigin && request.initiatorOrigin !== appBase) ||
+      !['GET', 'POST'].includes(request.method)
+    )
+      return new Response('Forbidden', {status: 403});
+    try {
+      const u = new URL(request.url),
+        headers = Object.fromEntries(request.headers);
+      delete headers['accept-encoding'];
+      const body = request.method === 'POST' ? Buffer.from(await request.arrayBuffer()) : undefined;
+      const result = await localRequest({path: u.pathname + u.search, method: request.method, headers, body});
+      return new Response(result.body, {status: result.status, headers: result.headers});
+    } catch (error) {
+      diagnosticLog?.record('transport.failed', {error, phase: 'request'}, 'error');
+      return new Response('Local service unavailable', {status: 503});
+    }
+  });
+  locked = powerMonitor.getSystemIdleState(1) === 'locked';
+  powerMonitor.on('lock-screen', () => {
+    locked = true;
+    sendContext().catch(() => {});
+  });
+  powerMonitor.on('unlock-screen', () => {
+    locked = false;
+    sendContext().catch(() => {});
+  });
+  powerMonitor.on('resume', () => sendContext('wake').catch(() => {}));
+  Menu.setApplicationMenu(null);
+  await migrate();
+  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icons/waiting.png')));
+  tray.on('click', openWindow);
+  tray.on('double-click', openWindow);
+  updateTray();
+  const logs = await fs.open(path.join(data, 'desktop.log'), 'a');
+  service = fork(path.join(root, 'server.mjs'), [], {
+    execPath: process.execPath,
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      WALLWAVE_DATA_DIR: data,
+      WALLWAVE_PORT: '0',
+      WALLWAVE_DESKTOP_IPC: '1',
+      WALLWAVE_DIAGNOSTIC_SESSION: diagnosticSession,
+      WALLWAVE_TEST_HTTP: testMode && process.env.WALLWAVE_DESKTOP_NO_HTTP !== '1' ? '1' : '0',
+    },
+    silent: true,
+    windowsHide: true,
+    serialization: 'advanced',
+  });
+  localRequest = createServiceClient(service, {
+    onEvent: (event, attributes, correlation) =>
+      diagnosticLog?.record(event, attributes, event === 'transport.failed' ? 'error' : 'warn', {
+        ...correlation,
+        component: 'transport',
+      }),
+  });
+  service.stdout.on('data', bytes => logs.write(bytes).catch(() => {}));
+  service.stderr.on('data', bytes => logs.write(bytes).catch(() => {}));
+  service.on('exit', (code, signal) => {
+    diagnosticLog?.record('service.exited', {exitCode: code, clean: quitting}, quitting ? 'info' : 'error');
+    logs.close().catch(() => {});
+    if (!quitting && base) {
+      failure = true;
+      updateTray();
+      dialog
+        .showMessageBox({
+          type: 'error',
+          title: l().startupError,
+          message: l().serviceError,
+          detail:
+            extra('Журнал: ', 'Log: ') +
+            path.join(data, 'desktop.log') +
+            '\nhttps://github.com/yurgenium/WallWave/issues',
+          buttons: [extra('Закрыть', 'Close'), extra('Открыть журнал', 'Open log')],
+        })
+        .then(({response}) => {
+          if (response === 1) shell.showItemInFolder(path.join(data, 'desktop.log'));
+        });
+    }
+  });
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(Error('Background service startup timeout')), 20000);
+    service.once('error', reject);
+    service.once('exit', () => reject(Error('Background service exited')));
+    service.on('message', message => {
+      if (message.type === 'ready') {
+        clearTimeout(timeout);
+        base = appBase;
+        if (message.port) testHttpBase = 'http://127.0.0.1:' + message.port;
+        resolve();
+      }
+    });
+  });
+  await poll();
+  pollTimer = setInterval(poll, 3000);
+  if (!process.argv.includes('--hidden')) openWindow();
+  if (testMode)
+    await fs.writeFile(
+      path.join(data, 'desktop-test-ready.json'),
+      JSON.stringify({base: testHttpBase || base, uiBase: base, pid: process.pid, servicePid: service.pid}),
+    );
+}
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', openWindow);
+  app.on('activate', openWindow);
+  app.on('window-all-closed', () => {});
+  app.on('before-quit', event => {
+    if (!canQuit) {
+      event.preventDefault();
+      beginQuit();
+    }
+  });
+  app
+    .whenReady()
+    .then(start)
+    .catch(async error => {
+      diagnosticLog?.record('process.exception', {error, phase: 'startup'}, 'error');
+      await diagnosticLog?.flush();
+      await fs.mkdir(data, {recursive: true}).catch(() => {});
+      await fs.appendFile(path.join(data, 'desktop.log'), String(error.stack) + '\n').catch(() => {});
+      dialog.showErrorBox(
+        l().startupError,
+        error.message +
+          '\n\n' +
+          extra('Журнал запуска: ', 'Startup log: ') +
+          path.join(data, 'desktop.log') +
+          '\nhttps://github.com/yurgenium/WallWave/issues',
+      );
+      beginQuit();
+    });
+}
+if (testMode)
+  globalThis.__wallwaveTest = {
+    openWindow,
+    post,
+    beginQuit,
+    getSnapshot: () => snapshot,
+    getMenu: () => nativeMenu,
+    getServicePid: () => service?.pid,
+  };
