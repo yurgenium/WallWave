@@ -27,12 +27,12 @@ function cpuUsage() {
 const utf8Output = '[Console]::OutputEncoding=New-Object System.Text.UTF8Encoding $false;';
 
 /** One-shot PowerShell call. Used for rare actions and as a fallback. */
-export function powershell(script, env = {}, operation = 'unknown') {
+export function powershell(script, env = {}, operation = 'unknown', timeout = 10000) {
   const started = performance.now();
   return new Promise((resolve, reject) => {
     const p = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', utf8Output + script], {windowsHide: true, env: {...process.env, ...env}});
     let output = '', stderr = '', timedOut = false;
-    const timer = setTimeout(() => { timedOut = true; p.kill(); }, 10000);
+    const timer = setTimeout(() => { timedOut = true; p.kill(); }, timeout);
     p.stdout.setEncoding('utf8');
     p.stdout.on('data', b => output += b);
     p.stderr.on('data', b => { if (stderr.length < 16384) stderr += b; });

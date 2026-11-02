@@ -1,5 +1,6 @@
 // Refuse private runtime files even when somebody uses git add --force.
 import {execFileSync} from 'node:child_process';
+import fs from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -20,8 +21,11 @@ if(process.argv.includes('--self-test')){
  if(blocked.some(x=>!privatePath(x))||allowed.some(privatePath))throw Error('Repository privacy check self-test failed');
  console.log('Privacy rules self-test: OK');
 }else{
- const files=process.argv.includes('--history')?git('log','--all','--format=','--name-only').split(/\r?\n/):git('ls-files','-z').split('\0');
+ // --pushed reads git's pre-push input and checks only commits the remote does not have yet.
+ const lines=text=>text.split(/\r?\n/);
+ const pushed=()=>{const tips=lines(fs.readFileSync(0,'utf8')).map(line=>line.trim().split(/\s+/)[1]).filter(sha=>sha&&!/^0+$/.test(sha));return tips.length?lines(git('log',...tips,'--not','--remotes','--format=','--name-only')):[];};
+ const files=process.argv.includes('--pushed')?pushed():process.argv.includes('--history')?lines(git('log','--all','--format=','--name-only')):git('ls-files','-z').split('\0');
  const bad=[...new Set(files.filter(Boolean))].filter(privatePath);
  if(bad.length){console.error('Private data or wallpaper files are forbidden in this repository:\n'+bad.join('\n'));process.exitCode=1;}
- else console.log(`Repository privacy check: OK (${new Set(files.filter(Boolean)).size} paths${process.argv.includes('--history')?' in history':''})`);
+ else console.log(`Repository privacy check: OK (${new Set(files.filter(Boolean)).size} paths${process.argv.includes('--history')?' in history':process.argv.includes('--pushed')?' in pushed commits':''})`);
 }
