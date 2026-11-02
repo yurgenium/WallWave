@@ -1,5 +1,6 @@
 !include "common.nsh"
 !include "FileFunc.nsh"
+!include "WordFunc.nsh"
 !include "nsDialogs.nsh"
 !include "MUI2.nsh"
 
@@ -56,9 +57,9 @@ Function .onInit
     MessageBox MB_OK "Выбор папки или распаковка WallWave уже выполняется."
     Quit
   StrCpy $ConfigFile "$APPDATA\Wallbloom\installation.ini"
-  ReadEnvStr $0 WALLBLOOM_DESKTOP_TEST
+  ReadEnvStr $0 WALLWAVE_DESKTOP_TEST
   StrCmp $0 "1" 0 config_ready
-  ReadEnvStr $TestHome WALLBLOOM_DESKTOP_TEST_HOME
+  ReadEnvStr $TestHome WALLWAVE_DESKTOP_TEST_HOME
   StrCmp $TestHome "" config_ready
   StrCpy $ConfigFile "$TestHome\installation.ini"
   config_ready:
@@ -69,7 +70,7 @@ Function .onInit
   Call CheckExisting
   StrCmp $InstallRoot "" 0 remembered
   StrCpy $ParentFolder "$LOCALAPPDATA"
-  ReadEnvStr $0 WALLBLOOM_DESKTOP_TEST
+  ReadEnvStr $0 WALLWAVE_DESKTOP_TEST
   StrCmp $0 "1" 0 first_run
   StrCmp $TestHome "" first_run
   ReadEnvStr $ParentFolder WALLWAVE_TEST_INSTALL_PARENT
@@ -79,6 +80,12 @@ Function .onInit
   SetSilent silent
   Return
   first_run:
+  ; Nothing is installed, so there is nothing to close.
+  ${GetParameters} $0
+  ClearErrors
+  ${GetOptions} "$0" "--quit" $1
+  IfErrors +2
+    Quit
   IfSilent 0 +3
     SetErrorLevel 2
     Quit
@@ -167,8 +174,32 @@ Section
   InitPluginsDir
   ClearErrors
   StrCpy $RuntimeFolder "$InstallRoot\app\${VERSION}"
+  ; --quit only closes a running copy; it never installs or changes anything.
+  ${GetParameters} $2
+  ClearErrors
+  ${GetOptions} "$2" "--quit" $3
+  IfErrors not_quit
+  ReadINIStr $3 "$InstallRoot\installation.ini" "WallWave" "Runtime"
+  ClearErrors
+  Exec '"$InstallRoot\$3\${APP_EXECUTABLE_FILENAME}" --quit'
+  SetErrorLevel 0
+  Goto done
+  not_quit:
   ReadINIStr $0 "$InstallRoot\installation.ini" "WallWave" "Version"
-  StrCmp $0 "${VERSION}" 0 extract
+  StrCmp $0 "" extract
+  StrCmp $0 "${VERSION}" same_version
+  ; An older EXE must not silently roll back a newer installation.
+  ${VersionCompare} "$0" "${VERSION}" $1
+  StrCmp $1 1 0 extract
+  ClearErrors
+  ${GetOptions} "$2" "--allow-downgrade" $3
+  IfErrors 0 extract
+  ClearErrors
+  ReadINIStr $3 "$InstallRoot\installation.ini" "WallWave" "Runtime"
+  IfFileExists "$InstallRoot\$3\${APP_EXECUTABLE_FILENAME}" 0 extract
+  StrCpy $RuntimeFolder "$InstallRoot\$3"
+  Goto launch
+  same_version:
   IfFileExists "$RuntimeFolder\resources\app.asar" 0 extract
   IfFileExists "$RuntimeFolder\${APP_EXECUTABLE_FILENAME}" launch extract
   extract:

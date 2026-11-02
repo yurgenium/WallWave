@@ -2,14 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-// Every README download button must point at the version being released.
+// Download buttons follow the latest release, so a new version never needs them edited.
 for (const name of ['README.md', 'README.en.md']) {
-  test(`${name} download links match package.json version`, () => {
-    const {version} = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+  test(`${name} links to the latest release, not a fixed version`, () => {
     const readme = fs.readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
-    const linked = [...readme.matchAll(/releases\/(?:download|tag)\/v(\d+\.\d+\.\d+)/g)].map(m => m[1]);
-    assert.ok(linked.length > 0, 'README has release links');
-    assert.deepEqual([...new Set(linked)], [version]);
-    assert.ok(readme.includes(`· ${version} ·`), 'README badge shows current version');
+    assert.ok(readme.includes('releases/latest/download/WallWave.exe'));
+    assert.deepEqual([...readme.matchAll(/releases\/(?:download|tag)\/v\d+\.\d+\.\d+/g)].map(m => m[0]), []);
   });
 }

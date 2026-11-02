@@ -104,6 +104,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {labels, status} = require('./status.cjs');
 const {libraryDirectory} = require('./storage.cjs');
+const {pruneVersions} = require('./app-versions.cjs');
 let shortcutFeedback = null;
 let shortcutKey = '',
   contextKey = '',
@@ -538,9 +539,30 @@ function updateTray() {
       },
     },
     {type: 'separator'},
+    ...(snapshot?.update
+      ? [
+          {
+            id: 'update',
+            label: extra('Скачать версию ', 'Download version ') + snapshot.update.version,
+            click: () => openExternal(snapshot.update.url),
+          },
+          {type: 'separator'},
+        ]
+      : []),
     {id: 'quit', label: texts.quit, click: beginQuit},
   ]);
   tray.setContextMenu(nativeMenu);
+}
+let notifiedUpdate = null;
+async function prune() {
+  try {
+    const removed = await pruneVersions({
+      execPath: process.execPath,
+      version: app.getVersion(),
+      fs: require('original-fs').promises,
+    });
+    if (removed.length) diagnosticLog?.record('app.versionsRemoved', {count: removed.length});
+  } catch {}
 }
 async function poll() {
   if (!base || quitting) return;
@@ -548,6 +570,14 @@ async function poll() {
     const response = await serviceFetch(base + '/api/desktop-state', {timeout: 3000});
     if (!response.ok) throw Error();
     snapshot = await response.json();
+    if (snapshot.update && notifiedUpdate !== snapshot.update.version) {
+      notifiedUpdate = snapshot.update.version;
+      tray?.displayBalloon({
+        title: 'WallWave',
+        content: extra('Доступна новая версия: ', 'New version available: ') + snapshot.update.version,
+        iconType: 'info',
+      });
+    }
     if (shortcutFeedback && !snapshot.wallpaperAction && snapshot.wallpaperResult?.time >= shortcutFeedback) {
       const code = snapshot.wallpaperResult.code;
       tray?.displayBalloon({
@@ -750,16 +780,27 @@ async function start() {
   await poll();
   pollTimer = setInterval(poll, 3000);
   if (!process.argv.includes('--hidden')) openWindow();
+  // Remove old versions only once this one has clearly started and stayed up.
+  if (testMode) {
+    const fixture = path.dirname(process.env.WALLWAVE_DESKTOP_TEST_HOME || '');
+    if (fixture !== '.' && process.execPath.startsWith(fixture + path.sep)) await prune();
+  }
+  else setTimeout(prune, 60000).unref();
   if (testMode)
     await fs.writeFile(
       path.join(data, 'desktop-test-ready.json'),
       JSON.stringify({base: testHttpBase || base, uiBase: base, pid: process.pid, servicePid: service.pid}),
     );
 }
-if (!app.requestSingleInstanceLock()) {
+// `WallWave.exe --quit` asks a running copy to finish exactly as the tray's Exit item does.
+const quitRequested = process.argv?.includes('--quit');
+if (!app.requestSingleInstanceLock(quitRequested ? {quit: true} : {})) {
   app.quit();
 } else {
-  app.on('second-instance', openWindow);
+  app.on('second-instance', (event, argv, directory, request) => {
+    if (request?.quit || argv.includes('--quit')) beginQuit();
+    else openWindow();
+  });
   app.on('activate', openWindow);
   app.on('window-all-closed', () => {});
   app.on('before-quit', event => {
@@ -770,7 +811,14 @@ if (!app.requestSingleInstanceLock()) {
   });
   app
     .whenReady()
-    .then(start)
+    .then(() => {
+      if (quitRequested) {
+        canQuit = true;
+        app.quit();
+        return;
+      }
+      return start();
+    })
     .catch(async error => {
       diagnosticLog?.record('process.exception', {error, phase: 'startup'}, 'error');
       await diagnosticLog?.flush();

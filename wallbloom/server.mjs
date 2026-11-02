@@ -23,6 +23,7 @@ import {automaticSource} from './art-providers.mjs';
 import {tasteSearchTags} from './search-profile.mjs';
 import {initialProviders,validateProvider,searchProvider,enrich,searchCursor} from './providers.mjs';
 import {ResourcePressureGuard} from './resources.mjs';
+import {checkForUpdate} from './update-check.mjs';
 const resourceGuard=new ResourcePressureGuard();
 import {fetchBytes,networkActivity} from './network.mjs';
 import {diagnosticsReport,diagnosticContext,diagnosticError,availabilityReason,DiagnosticJournal,describeSettingsChange} from './diagnostics.mjs';
@@ -34,6 +35,7 @@ import {exportLibrary,restoreLibrary} from './archive.mjs';
 import {validateFrame,frameSource,renderFrame,renderDesktop,renderedName,pruneRendered} from './framing.mjs';
 const root=path.dirname(fileURLToPath(import.meta.url)),dataRoot=path.resolve(process.env.WALLWAVE_DATA_DIR||process.env.WALLBLOOM_DATA_DIR||path.join(root,'data'));
 const applicationVersion=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')).version;
+let updateInfo=null,lastUpdateCheck=0;
 const profiles=await new Profiles(dataRoot).open();let dir=profiles.directory(),switchingProfile=false;
 const nativeStatus={};
 async function nativeProbe(name,fn,fallback){try{const value=await fn();nativeStatus[name]={ok:true,observedAt:Date.now()};return value;}catch(error){nativeStatus[name]={ok:false,observedAt:Date.now(),error:diagnosticError(error)};return fallback;}}
@@ -92,7 +94,7 @@ const errorEvents=new Set(['networkError','timeout','sourceUnavailable','rateLim
 errorEvents.add('sourceQuotaReached');errorEvents.add('sourceMaintenance');
 errorEvents.add('sourceTemporarilyUnavailable');for(const code of ['monitorContentConflict','wallpaperRatingBlocked','wallpaperExcludedTags'])errorEvents.add(code);
 function event(code,detail={}){diagnosticLog.record('app.event',{code,action:wallpaperAction?.action||job?.action||detail.kind||'unknown'},errorEvents.has(code)?'error':'info');const entry={time:Date.now(),code,action:wallpaperAction?.action||job?.action||detail.kind||'unknown',...detail};events.unshift(entry);events=events.slice(0,60);if(errorEvents.has(code)){lastError={code,time:entry.time};console.error(JSON.stringify({time:new Date(entry.time).toISOString(),code}));}}
-function desktopState(){return {activeProfile:profiles.active,switchingProfile,wallpaperAction,wallpaperResult,canPrevious:(db.wallpaperHistory||[]).length>0,rotationPaused:!!db.rotationPaused,wallpaperHold:db.wallpaperHold,rotationCollection:db.rotationCollection,settings:db.settings,job:db.workMode&&job?{...job,item:''}:job||wallpaperAction&&{kind:'apply',done:0,total:1,started:wallpaperAction.started},aiRequested,guard,paused:db.paused,lastError,workMode:db.workMode,current:db.current,shortcutStatus,token};}
+function desktopState(){return {version:applicationVersion,update:db.settings.checkUpdates===false?null:updateInfo,activeProfile:profiles.active,switchingProfile,wallpaperAction,wallpaperResult,canPrevious:(db.wallpaperHistory||[]).length>0,rotationPaused:!!db.rotationPaused,wallpaperHold:db.wallpaperHold,rotationCollection:db.rotationCollection,settings:db.settings,job:db.workMode&&job?{...job,item:''}:job||wallpaperAction&&{kind:'apply',done:0,total:1,started:wallpaperAction.started},aiRequested,guard,paused:db.paused,lastError,workMode:db.workMode,current:db.current,shortcutStatus,token};}
 // Cleared copies retain private metadata for duplicate prevention, not gallery cards.
 function libraryVisible(x){if(x.cleanupRemoved&&!x.downloaded)return false;if(!x.vote&&!db.providers.some(p=>p.id===x.provider&&p.enabled))return false;const settings=visibleSettings(db);return allowed(x,x.downloaded||x.vote?{...settings,excludedTags:[]}:settings);}
 function state(){return {...desktopState(),network:networkActivity(),profiles:profiles.list(),collections:db.collections,canPrevious:(db.wallpaperHistory||[]).length>0,diagnostics:{path:path.join(dir,'diagnostics','WallWave-diagnostics.json'),issues:'https://github.com/yurgenium/WallWave/issues'},showCleanup:{count:shownCleanupCandidates(db).length,dueAt:db.showCleanup?.dueAt},providers:db.providers.map(p=>({...p,hasKey:!!keys[p.id]})),tagCleanup:{count:cleanupCandidates(db,{kind:'tags'}).length,dueAt:db.tagCleanup?.dueAt},items:db.items.filter(x=>libraryVisible(x)&&(!x.aiScreening?.rejected||x.downloaded)).map(({embedding,localSource,visualSample,aiTitle,...x})=>x),events:db.workMode?events.map(({item,...x})=>x):events,providerStatus,used,library:dir,aiRejectedCount:db.items.filter(x=>!x.downloaded&&x.aiScreening?.rejected).length,lastRefresh:db.lastRefresh,recentReviews:db.recentReviews||[],refreshOutcome:db.lastRefreshOutcome,refreshDownloaded:db.lastRefreshDownloaded,refreshTarget:db.lastRefreshTarget,refreshReason:db.lastRefreshReason,canRestore:!!backup,screen:desktop&&{width:desktop.width,height:desktop.height},monitors:monitors.map(({wallpaper,...m})=>({...m,current:db.monitorCurrent[m.id]})),automation:automationState(db,guard,{job,nextRetry,lastError,aiRequested}),exportPath,rollbackPath};}
@@ -318,6 +320,9 @@ function queueTrigger(reason){if(!db.rotationTriggers.includes(reason)){diagnost
 async function indexCached(signal){const items=db.items.filter(x=>x.downloaded&&!x.visualHash&&!x.fingerprintError).slice(0,8);job.total=items.length;for(const x of items){signal.throwIfAborted();if(guard.code!=='idle')throw new AppError('waitIdle');try{const fingerprint=await visualFingerprint(await fs.readFile(imagePath(dir,x)));Object.assign(x,fingerprint,{hash:x.hash||fingerprint.hash});}catch(e){if(signal.aborted)throw e;x.fingerprintError=true;event('invalidImage');}job.done++;await save();}}
 let guardPoll=null;const pollGuard=()=>guardPoll||(guardPoll=updateGuard().finally(()=>{guardPoll=null;}));
 await pollGuard();setInterval(pollGuard,2500).unref();
+// A failed check stays silent: updates are optional and the next attempt comes a day later.
+async function updateTick(){if(db.settings.checkUpdates===false||Date.now()-lastUpdateCheck<864e5)return;lastUpdateCheck=Date.now();try{updateInfo=await checkForUpdate(applicationVersion);}catch{}}
+if(process.env.WALLWAVE_DESKTOP_IPC==='1'&&process.env.WALLWAVE_DESKTOP_TEST!=='1'){setTimeout(updateTick,60000).unref();setInterval(updateTick,36e5).unref();}
 if(db.settings.changeOnStartup)queueTrigger('startup');
 setInterval(async()=>{try{const next=await listMonitors(),added=next.filter(m=>!monitors.some(old=>old.id===m.id));if(JSON.stringify(monitors)!==JSON.stringify(next))logTopology(monitors,next);monitors=next;if(db.workMode&&!job&&added.length)start('apply',async()=>{for(const m of added)await applyMonitor(path.join(dir,'work-neutral.jpg'),m.id);});}catch{}},60000).unref();
 async function ai(signal){

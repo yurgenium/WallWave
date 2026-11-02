@@ -1,6 +1,7 @@
 [
   "ai-session.mjs",
   "ai-worker.mjs",
+  "app-versions.cjs",
   "app.js",
   "archive.mjs",
   "art-providers.mjs",
@@ -53,6 +54,7 @@
   "storage.cjs",
   "tag-editor.js",
   "tag-input.js",
+  "update-check.mjs",
   "visual-ai.mjs",
   "wallpaper-source.js",
   "windows.mjs"

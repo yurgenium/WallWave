@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://github.com/yurgenium/WallWave/releases/download/v0.7.0/WallWave.exe">⬇ Download for Windows</a></strong><br>
-  Windows x64 · Russian / English · 0.7.0 · Preview
+  <strong><a href="https://github.com/yurgenium/WallWave/releases/latest/download/WallWave.exe">⬇ Download for Windows</a></strong><br>
+  Windows x64 · Russian / English
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 **No programming experience or extra packages are needed for the ready-to-run app.** A 64-bit Windows computer is required. Online sources need an internet connection.
 
-1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/download/v0.7.0/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/tag/v0.7.0). The **Source code** archives are for development and are not needed to run the app.
+1. **Download [WallWave.exe](https://github.com/yurgenium/WallWave/releases/latest/download/WallWave.exe).** It is also available under **Assets** on the [release page](https://github.com/yurgenium/WallWave/releases/latest). The **Source code** archives are for development and are not needed to run the app.
 2. **Double-click the downloaded file.** On the first launch, choose where to place the app. A **WallWave** folder will be created there. Wait for extraction and the app window to open.
 3. **Open Settings → Interests and content.** Enter a few comma-separated interests, such as `nature, mountains, space`, then click **Save**. Other settings can stay at their defaults initially.
 4. **Check Sources.** Wallhaven is enabled initially. To use your own pictures, add a **Local folder** source and select your wallpaper folder. Sources are also available in Settings.
@@ -179,9 +179,9 @@ To update:
 
 1. Right-click the WallWave icon near the clock and choose **Quit**. Hidden icons may be under the `˄` button.
 2. Download and run the new release EXE.
-3. The saved installation location is reused. **Wallpapers, ratings and settings are preserved.** The previous app version stays under `WallWave\app` for rollback.
+3. The saved installation location is reused. **Wallpapers, ratings and settings are preserved.** Two previous app versions stay under `WallWave\app` for rollback; older ones are removed automatically.
 
-Closing the window keeps WallWave running in the tray. Updates are installed manually; the releases page is also linked from **Settings → Updates → GitHub**.
+Closing the window keeps WallWave running in the tray. Once a day the app checks GitHub for a new version and tells you about it; installing it is manual. You can turn the check off in **Settings → Updates**, which also links to the releases page.
 
 <details>
 <summary><strong>❓ Troubleshooting and shortcuts</strong></summary>
