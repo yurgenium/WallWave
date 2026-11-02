@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 // Every README download button must point at the version being released.
-for (const name of ['README.md', 'README.ru.md', 'README.en.md']) {
+for (const name of ['README.md', 'README.en.md']) {
   test(`${name} download links match package.json version`, () => {
     const {version} = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
     const readme = fs.readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');

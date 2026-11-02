@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="README.ru.md">Русский</a> · <strong>English</strong> ·
+  <a href="README.md">Русский</a> · <strong>English</strong> ·
   <a href="https://github.com/yurgenium/WallWave/releases">All releases</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
