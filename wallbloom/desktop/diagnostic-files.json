@@ -54,6 +54,7 @@
   "storage.cjs",
   "tag-editor.js",
   "tag-input.js",
+  "taste-model.mjs",
   "update-check.mjs",
   "visual-ai.mjs",
   "wallpaper-source.js",

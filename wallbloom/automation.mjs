@@ -1,6 +1,7 @@
 import {allowed,score} from './core.mjs';
 import {automaticSource} from './art-providers.mjs';
 import {validEmbedding,embeddingVersion} from './visual-ai.mjs';
+import {chooseLearned,learnedRank,tasteActive} from './taste-model.mjs';
 
 export function visibleSettings(db){return db.workMode?{...db.settings,purity:'100',preset:'safe'}:db.settings;}
 export function eligible(db,settings=visibleSettings(db)){
@@ -8,12 +9,14 @@ export function eligible(db,settings=visibleSettings(db)){
  return db.items.filter(x=>{if(members&&!members.has(x.id))return false;const rule=db.settings.cleanupAfterShows?.[x.vote||'pending'];return x.downloaded&&(members?.has(x.id)||!rule?.enabled||(x.showCount||0)<rule.shows)&&(members?.has(x.id)||x.vote||!db.providers||db.providers.some(p=>p.id===x.provider&&p.enabled))&&allowed(x,settings)&&!['ban','dislike'].includes(x.vote)&&(members||x.vote!=='deferred');});
 }
 // `only` limits the choice to a set of ids, e.g. images allowed on every monitor.
-export function chooseNext(db,settings=visibleSettings(db),current=db.current,random=Math.random,only=null){
+export function chooseNext(db,settings=visibleSettings(db),current=db.current,random=Math.random,only=null,{manual=false}={}){
  const items=eligible(db,settings).filter(x=>x.id!==current&&(!only||only.has(x.id)));
  if(!items.length)return null;
  // Use the least shown cohort first; persisted counters survive restarts.
  const playlist=db.rotationCollection?db.collections?.find(c=>c.id===db.rotationCollection):null;
  const seen=x=>playlist?(playlist.lastShown?.[x.id]||0):(x.rotationCount||0),least=Math.min(...items.map(seen));
+ const aspectCost=x=>Math.abs(Math.log(((x.originalWidth||x.width||settings.width)/(x.originalHeight||x.height||settings.height))/(settings.width/settings.height)));
+ if(!playlist&&tasteActive(db))return chooseLearned(items,db,seen,{manual,random,aspectCost});
  const pool=items.filter(x=>seen(x)===least);
  const diversity=settings.diversity/100;
  if(random()<diversity)return pool[Math.floor(random()*pool.length)];
@@ -22,6 +25,11 @@ export function chooseNext(db,settings=visibleSettings(db),current=db.current,ra
 }
 export function pendingCapacity(db){return db.settings.pendingTarget>0?Math.max(0,db.settings.pendingTarget-db.items.filter(x=>x.downloaded&&!x.vote&&(!db.providers||db.providers.some(p=>p.id===x.provider&&p.enabled))).length):Infinity;}
 export function rankCandidates(items,db,random=Math.random){
+ // Pictures already analysed go first, best match first: trying them costs no request.
+ if(tasteActive(db)){const known=x=>x.embeddingVersion===embeddingVersion&&validEmbedding(x.embedding),rest=items.filter(x=>!known(x)),ranks=new Map(items.filter(known).map(x=>[x.id,learnedRank(x,db.tasteModel)]));return [...items.filter(known).sort((a,b)=>ranks.get(b.id)-ranks.get(a.id)),...rankByScore(rest,db,random)];}
+ return rankByScore(items,db,random);
+}
+function rankByScore(items,db,random){
  const ranked=items.map(x=>({x,rank:score(x,db.items,db.settings)})).sort((a,b)=>b.rank-a.rank||(a.x.size>0?a.x.size:Infinity)-(b.x.size>0?b.x.size:Infinity));
  const result=[];while(ranked.length){const i=random()<db.settings.diversity/100?Math.floor(random()*ranked.length):0;result.push(ranked.splice(i,1)[0].x);}return result;
 }

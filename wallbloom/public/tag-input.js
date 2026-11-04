@@ -24,4 +24,18 @@ export function parseTags(input){
  }
  return result;
 }
+// Older versions split a clicked tag such as "Warhammer 40,000" at its comma and saved
+// the parts as neighbours. Join them again when the library knows the original tag.
+export function repairSplitTags(tags,knownTags){
+ const compact=value=>tagIdentity(value).replace(/\s*,\s*/g,','),known=new Map();
+ for(const tag of knownTags)if(tag.includes(','))known.set(compact(tag),tag);
+ if(!known.size)return tags;
+ const result=[],seen=new Set();
+ for(let i=0;i<tags.length;i++){
+  let value=tags[i];
+  for(let length=4;length>=2;length--){const original=i+length<=tags.length&&known.get(tags.slice(i,i+length).map(compact).join(','));if(original){value=original;i+=length-1;break;}}
+  const id=tagIdentity(value);if(!seen.has(id)){seen.add(id);result.push(value);}
+ }
+ return result;
+}
 export function formatTags(tags){return tags.map(tag=>/[,"\r\n]/.test(tag)?'"'+tag.replaceAll('"','""')+'"':tag).join(', ');}

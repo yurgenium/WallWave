@@ -1,7 +1,7 @@
 import {parseTags,formatTags,tagListError,maxTags} from './tag-input.js';
 export function searchTags(tags,query){const needle=query.trim().toLowerCase();return needle?tags.filter(tag=>tag.toLowerCase().includes(needle)):tags;}
 const pageSize=30;
-export function setupTagEditors(form,{t}){
+export function setupTagEditors(form,{t,save}){
  const refreshers=[];
  for(const key of ['tags','excludedTags']){
   const field=form.elements.namedItem(key),label=field.closest('label'),wrap=document.createElement('div');wrap.className='tag-settings-field';label.replaceWith(wrap);wrap.append(label);
@@ -16,7 +16,7 @@ export function setupTagEditors(form,{t}){
    count.textContent=t('tagCounts').replace('{count}',tags.length).replace('{max}',maxTags).replace('{found}',matches.length);list.replaceChildren();
    for(const tag of matches.slice(page*pageSize,(page+1)*pageSize)){
     const row=document.createElement('li'),name=document.createElement('span'),remove=document.createElement('button');name.textContent=tag;remove.type='button';remove.textContent='×';remove.dataset.removeTag=tag;remove.setAttribute('aria-label',t('tagRemove').replace('{tag}',tag));
-    remove.onclick=()=>{field.value=formatTags(parseTags(field.value).filter(value=>value.toLowerCase()!==tag.toLowerCase()));field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));};row.append(name,remove);list.append(row);
+    remove.onclick=()=>{field.value=formatTags(parseTags(field.value).filter(value=>value.toLowerCase()!==tag.toLowerCase()));field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));save?.(key);};row.append(name,remove);list.append(row);
    }
    if(!matches.length){const empty=document.createElement('li');empty.className='muted';empty.textContent=t(tags.length?'tagNoMatches':'tagEmpty');list.append(empty);}
    pager.hidden=matches.length<=pageSize;previous.disabled=page===0;next.disabled=(page+1)*pageSize>=matches.length;

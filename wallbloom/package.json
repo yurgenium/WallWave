@@ -1,6 +1,6 @@
 {
   "name": "wallbloom",
-  "version": "0.7.1",
+  "version": "0.7.5",
   "private": true,
   "type": "module",
   "description": "Local wallpaper recommendations for Windows",
@@ -50,6 +50,7 @@
       "public/**",
       "server.mjs",
       "update-check.mjs",
+      "taste-model.mjs",
       "profiles.mjs",
       "library-features.mjs",
       "diagnostics.mjs",

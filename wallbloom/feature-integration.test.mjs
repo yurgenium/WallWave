@@ -133,3 +133,25 @@ test('pausing a running download reports a cancellation code without adding the 
 test('setting the same wallpaper again succeeds and ends a manual hold',async t=>{
  const f=await fixture(t);await f.post('apply',{id:'a'});await f.wait(s=>!s.wallpaperAction);await f.post('wallpaper-hold',{mode:'manual'});await f.post('apply',{id:'a'});const s=await f.wait(s=>!s.wallpaperAction);assert.equal(s.wallpaperResult.code,'wallpaperChanged');assert.equal(s.wallpaperHold,null);assert.equal(s.lastError,null);
 });
+
+test('a next request during a change is queued once, not lost',async t=>{
+ const f=await fixture(t);
+ const shows=s=>s.items.reduce((sum,x)=>sum+(x.rotationCount||0),0),settle=async()=>{await new Promise(resolve=>setTimeout(resolve,700));return f.wait(s=>!s.wallpaperAction);};
+ // One change may count several shows, one per monitor.
+ const start=shows(await f.get());await f.post('next');const perChange=shows(await settle())-start;assert.ok(perChange>0);
+ // Three presses at once: one runs, one waits, the third adds nothing.
+ await Promise.all([f.post('next'),f.post('next'),f.post('next')]);
+ const settled=await settle();
+ assert.equal(settled.lastError,null);
+ assert.equal(shows(settled),start+perChange*3);
+});
+
+test('with learned selection a skip is counted, and a like on the desktop clears it',async t=>{
+ const f=await fixture(t,{settings:{monitorMode:'same'}});let s=await f.get();assert.equal(s.current,'a');
+ await f.post('settings',{...s.settings,learnedTaste:true});
+ const settle=async()=>{await new Promise(resolve=>setTimeout(resolve,300));return f.wait(s=>!s.wallpaperAction);};
+ await f.post('next');s=await settle();assert.equal(s.current,'b');assert.equal(s.items.find(x=>x.id==='a').skips,1);
+ await f.post('next');s=await settle();assert.equal(s.current,'a');assert.equal(s.items.find(x=>x.id==='b').skips,1);
+ s=await f.post('vote',{id:'a',vote:'like'});const liked=s.items.find(x=>x.id==='a');assert.equal(liked.desktopLike,true);assert.equal(liked.skips,undefined);
+ s=await f.post('vote',{id:'b',vote:'like'});const other=s.items.find(x=>x.id==='b');assert.equal(other.desktopLike,undefined);assert.equal(other.skips,1);
+});

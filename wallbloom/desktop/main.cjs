@@ -162,6 +162,18 @@ async function sendContext(trigger) {
   });
   if (r.ok) contextKey = key;
 }
+// The wallpaper view controls the window directly, so Esc reaches the page as usual.
+ipcMain.on('wallwave:set-fullscreen', (event, active) => {
+  if (
+    typeof active !== 'boolean' ||
+    !window ||
+    event.sender !== window.webContents ||
+    event.senderFrame !== window.webContents.mainFrame ||
+    event.senderFrame.url !== base + '/'
+  )
+    return;
+  window.setFullScreen(active);
+});
 ipcMain.on('wallwave:shortcut-capture', (event, active) => {
   if (
     typeof active !== 'boolean' ||
@@ -389,6 +401,7 @@ function openWindow(panel) {
   });
   window.webContents.on('will-attach-webview', event => event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => callback(false));
+  window.on('leave-full-screen', () => window?.webContents.send('wallwave:left-fullscreen'));
   window.on('blur', () => setShortcutCapture(false));
   window.webContents.on('render-process-gone', (_, details) => {
     setShortcutCapture(false);

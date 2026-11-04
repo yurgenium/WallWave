@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {defaults,validate,allowed} from './core.mjs';
-import {parseTags,formatTags,tagListError,maxTags} from './public/tag-input.js';
+import {parseTags,formatTags,tagListError,maxTags,repairSplitTags} from './public/tag-input.js';
 import {searchTags} from './public/tag-editor.js';
 import {wallhavenQuery} from './providers.mjs';
 const tags=Array.from({length:1000},(_,i)=>'тег '+i);
@@ -19,4 +19,14 @@ test('tag search matches partial names in both languages without changing the st
 });
 test('a thousand exclusions keep the remote query bounded while all exclusions still block locally',()=>{
  const excluded=Array.from({length:1000},(_,i)=>'длинный исключённый тег '+i),query=wallhavenQuery('nature',excluded);assert(encodeURIComponent(query).length<=1500);assert(query.includes(excluded[0]));assert(!query.includes(excluded.at(-1)));assert.equal(allowed({rating:'safe',tags:[excluded.at(-1)]},{...defaults,excludedTags:excluded}),false);
+});
+
+test('tags an older version split at a comma are joined again; other tags stay',()=>{
+ const known=['Warhammer 40,000','nature','artist, sample'];
+ assert.deepEqual(repairSplitTags(['nature','Warhammer 40','000','space'],known),['nature','Warhammer 40,000','space']);
+ assert.deepEqual(repairSplitTags(['artist','sample'],known),['artist, sample']);
+ assert.deepEqual(repairSplitTags(['Warhammer 40','000','Warhammer 40,000'],known),['Warhammer 40,000']);
+ assert.deepEqual(repairSplitTags(['000','Warhammer 40'],known),['000','Warhammer 40'],'only neighbours in the original order are joined');
+ assert.deepEqual(repairSplitTags(['Warhammer 40','000'],['nature']),['Warhammer 40','000'],'nothing is joined without a known original');
+ const once=repairSplitTags(['Warhammer 40','000'],known);assert.deepEqual(parseTags(formatTags(once)),once);assert.deepEqual(repairSplitTags(once,known),once);
 });

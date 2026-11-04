@@ -88,3 +88,21 @@ input.shortcut-recording { outline: 2px solid #8ef0cd; outline-offset: 2px; }
 
 /* Wallpaper counts stay visible while the status details are collapsed. */
 .download-progress{grid-column:1/-1;display:grid;gap:8px}.download-progress[hidden]{display:none}.download-progress label{display:grid;gap:4px;margin:0;font-size:12px}.download-progress progress{display:block;width:100%;max-width:none;height:5px}.download-progress #preparedProgress{accent-color:#6f9c8d}.download-progress small{font-size:11px}
+
+.preview-stage .full-preview-image{cursor:zoom-in}
+.full-preview-dialog.desktop-view{width:100vw;max-width:none;height:100vh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:#000;overflow:hidden}
+.full-preview-dialog.desktop-view .preview-stage{position:static;padding:0;width:100vw;height:100vh;background:#000}
+.full-preview-dialog.desktop-view .preview-stage .full-preview-image{width:100vw;height:100vh;max-width:none;max-height:none;object-fit:contain;background:#000;cursor:zoom-out}
+.full-preview-dialog.desktop-view>p{position:fixed;top:8px;left:12px;margin:0;z-index:3}
+.full-preview-dialog.desktop-view .preview-header{position:fixed;right:64px;bottom:14px;margin:0;z-index:3;padding:0}
+.full-preview-dialog.desktop-view .preview-header h2{display:none}
+.full-preview-dialog.desktop-view .preview-arrow{position:fixed;top:auto;bottom:14px;transform:none}
+.full-preview-dialog.desktop-view .preview-arrow:first-child{left:12px}
+.full-preview-dialog.desktop-view .preview-arrow:last-child{right:12px}
+.full-preview-dialog.desktop-view .preview-history{position:fixed;top:auto;bottom:14px;left:64px;transform:none}
+.full-preview-dialog.desktop-view .preview-panel{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:min(760px,calc(100vw - 330px));margin:0;padding:8px 10px;border-radius:10px;background:#101318cc;z-index:3}
+.full-preview-dialog.desktop-view .preview-panel .card-body>h3,.full-preview-dialog.desktop-view .preview-panel .card-body>.muted,.full-preview-dialog.desktop-view .preview-panel .card-tags{display:none}
+.full-preview-dialog.desktop-view .preview-arrow,.full-preview-dialog.desktop-view .preview-history,.full-preview-dialog.desktop-view .preview-header,.full-preview-dialog.desktop-view .preview-panel{opacity:.3;transition:opacity .15s}
+.full-preview-dialog.desktop-view .preview-arrow:hover,.full-preview-dialog.desktop-view .preview-arrow:focus-visible,.full-preview-dialog.desktop-view .preview-history:hover,.full-preview-dialog.desktop-view .preview-history:focus-visible,.full-preview-dialog.desktop-view .preview-header:hover,.full-preview-dialog.desktop-view .preview-header:has(:focus-visible),.full-preview-dialog.desktop-view .preview-panel:hover,.full-preview-dialog.desktop-view .preview-panel:has(:focus-visible){opacity:1}
+html.desktop-view-open,html.desktop-view-open body{overflow:hidden!important}
+.full-preview-dialog.desktop-view,.full-preview-dialog.desktop-view *{scrollbar-width:none}

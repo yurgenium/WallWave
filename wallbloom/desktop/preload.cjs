@@ -10,6 +10,8 @@ window.addEventListener('click',event=>{
 },true);
 let panelListener,pendingPanel;ipcRenderer.on('wallwave:open-panel',(_,panel)=>{if(panel!=='hold')return;if(panelListener)panelListener(panel);else pendingPanel=panel;});
 contextBridge.exposeInMainWorld('wallwaveDesktop',{
+ setFullScreen:active=>{if(typeof active==='boolean')ipcRenderer.send('wallwave:set-fullscreen',active);},
+ onLeaveFullScreen:listener=>{if(typeof listener==='function')ipcRenderer.on('wallwave:left-fullscreen',()=>listener());},
  openLogs:()=>ipcRenderer.invoke('wallwave:open-logs'),
  saveDiagnostics:()=>ipcRenderer.invoke('wallwave:save-diagnostics'),
  diagnosticEvent:record=>ipcRenderer.send('wallwave:diagnostic-event',record),

@@ -149,6 +149,17 @@ AI runs locally on **1–2 CPU threads without GPU use**. It requires at least *
 
 Rejected originals are not downloaded. Without an available preview, Cautious allows the image unchecked and Strict defers it. Resource limits may also defer screening and downloading. **AI does not automatically clean the existing library or delete personal source files.**
 
+### Learned selection
+
+An optional setting in the selection method section, off by default. Each profile has its own model. It trains only on this computer from data already received, so it adds no requests to websites beyond the limit of one refresh.
+
+- **Choosing new wallpapers:** those scoring above a threshold are downloaded. A share (15–20%) is chosen at random to find new things.
+- **Tuning from likes:** the app compares the share of likes for wallpapers chosen by the model and at random. If the model wins, selection gets stricter; if not, looser.
+- **Changing wallpapers:** a manual request sets the highest-scoring wallpaper; automatic changes weigh the score and how long ago a wallpaper was shown. Recently shown wallpapers do not come back, even liked ones. A wallpaper replaced by hand soon after it appeared counts as a miss and appears less often, but your reaction to it does not change. After several replacements in a row, similar wallpapers drop in rank and a third of requests come from liked ones. A like given to the wallpaper on the desktop counts as a good choice and has double weight in training.
+- **Excluded wallpapers:** with the switch on, they count as "the topic is interesting, but not this picture". The model still uses them after their files are removed. It cannot say in words what you disliked.
+
+Needs at least **5 likes and 5 negative ratings** and a CLIP selection method. This is a probabilistic estimate: you should like more wallpapers, not all of them.
+
 ## ⚙️ Download limits
 
 **Images per search** controls how many new images one run tries to download. Selection continues to later pages after duplicates or rejected candidates. **Unreviewed wallpaper limit** controls how many downloaded images without a rating may accumulate; **0** disables that limit.
